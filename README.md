@@ -1,4 +1,4 @@
-<h1 align="center">My Neovim Configuration</h1>
+# Neovim Configuration
 
 ## Installation
 
