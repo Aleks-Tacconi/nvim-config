@@ -116,6 +116,7 @@ return {
 			cssls = {},
 			html = {},
 			lemminx = {},
+            bashls = {},
 		}
 		local ensure_installed = vim.tbl_keys(servers or {})
 		vim.list_extend(ensure_installed, {
@@ -130,6 +131,7 @@ return {
 			"gopls",
 			"pylint",
 			"luacheck",
+            "bashls",
 			"stylelint",
 			"markdownlint",
 			"prettier",

@@ -20,7 +20,6 @@ local options = {
 	clipboard = "unnamedplus", -- Use system clipboard
 	laststatus = 3, -- Enable global status bar
 	showmode = false, -- Hide mode display (e.g., -- INSERT --)
-	cmdheight = 2, -- Increase command-line height for messages
 	completeopt = { "menuone", "noselect" }, -- Completion options
 	pumheight = 10, -- Popup menu height
 	timeoutlen = 1000, -- Timeout for mapped sequences (ms)

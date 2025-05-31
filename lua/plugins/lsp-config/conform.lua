@@ -15,13 +15,16 @@ return {
 		notify_on_error = false,
 		formatters = {
 			prettier = {
-				prepend_args = { "--tab-width", "4" },
+				prepend_args = { "--tab-width", "4", "--print-width", "300" },
 			},
 		},
 		formatters_by_ft = {
 			lua = { "stylua" },
 			python = { "isort", "black" },
 			javascript = { "prettier" },
+			html = { "prettier" },
+			htmldjango = { "prettier" },
+			css = { "prettier" },
 			yaml = { "yamlfmt" },
 		},
 	},
