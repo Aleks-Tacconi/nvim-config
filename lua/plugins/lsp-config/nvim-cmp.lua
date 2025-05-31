@@ -23,13 +23,30 @@ return {
 		"hrsh7th/cmp-nvim-lsp",
 		"hrsh7th/cmp-path",
 		"hrsh7th/cmp-nvim-lsp-signature-help",
+		"onsails/lspkind.nvim",
 	},
 	config = function()
 		local cmp = require("cmp")
 		local luasnip = require("luasnip")
+		local lspkind = require("lspkind")
 		luasnip.config.setup({})
 
 		cmp.setup({
+			formatting = {
+				format = lspkind.cmp_format({
+					mode = "symbol",
+					maxwidth = {
+						menu = 50,
+						abbr = 50,
+					},
+					ellipsis_char = "...",
+					show_labelDetails = true,
+
+					before = function(entry, vim_item)
+						return vim_item
+					end,
+				}),
+			},
 			snippet = {
 				expand = function(args)
 					luasnip.lsp_expand(args.body)
@@ -50,12 +67,12 @@ return {
 			},
 			window = {
 				completion = {
-					border = "single",
-					winhighlight = "Normal:Pmenu,FloatBorder:PmenuBorder,CursorLine:PmenuSel,Search:None",
+					border = "rounded",
+					scrollbar = false,
 				},
 				documentation = {
-					border = "single",
-					winhighlight = "Normal:Pmenu,FloatBorder:PmenuBorder",
+					border = "rounded",
+					scrollbar = false,
 				},
 			},
 		})
