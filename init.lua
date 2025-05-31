@@ -37,5 +37,5 @@ vim.api.nvim_set_current_buf(current_buf)
 vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
 	border = "single",
 })
-vim.api.nvim_set_hl(0, "NormalFloat", { fg = "#ffffff" })
-vim.api.nvim_set_hl(0, "FloatBorder", { fg = "#ffffff" })
+vim.api.nvim_set_hl(0, "StatusLine", { bg = "#0e0e0e", fg = "#ffffff" })
+vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "#0e0e0e", fg = "#666666" })

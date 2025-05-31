@@ -6,9 +6,13 @@ return {
 
 		require("bufferline").setup({
 			options = {
-				indicator = {
-					style = "none",
-				},
+				mode = "buffers",
+				indicator = { style = "none" },
+				separator_style = "thin",
+				show_close_icon = false,
+				show_buffer_close_icons = false,
+				always_show_bufferline = true,
+				color_icons = true,
 				numbers = function(opts)
 					local marks = harpoon:list().items
 					local bufname = vim.fn.fnamemodify(vim.fn.bufname(opts.id), ":p")
@@ -54,35 +58,23 @@ return {
 				end,
 			},
 			highlights = {
-				fill = {
-					bg = "none",
-				},
-				background = {
-					bg = "none",
-				},
-				tab = {
-					bg = "none",
-				},
-				tab_selected = {
-					bg = "none",
-				},
-				tab_close = {
-					bg = "none",
-				},
 				buffer_selected = {
-					bg = "none",
+					italic = true,
+					bold = true,
+                    fg="#ffffff",
+				},
+				numbers_selected = {
 					bold = true,
 					italic = false,
-				},
-				separator = {
-					fg = "#3b4261",
-					bg = "none",
-				},
-				separator_selected = {
-					fg = "#3b4261",
-					bg = "none",
+                    fg="#ffffff",
 				},
 			},
 		})
+		vim.api.nvim_set_hl(0, "BufferLineFill", { bg = "#0e0e0e" })
+		vim.api.nvim_set_hl(0, "BufferLineBackground", { bg = "#0e0e0e" })
+		vim.api.nvim_set_hl(0, "BufferLineSeparator", { bg = "#0e0e0e", fg = "#0e0e0e" })
+		vim.api.nvim_set_hl(0, "BufferLineSeparatorVisible", { bg = "#0e0e0e", fg = "#0e0e0e" })
+		vim.api.nvim_set_hl(0, "BufferLineSeparatorSelected", { bg = "#0e0e0e", fg = "#0e0e0e" })
+        vim.api.nvim_set_hl(0, "BufferLineIndicatorSelected", { bg = "#0e0e0e", fg = "#0e0e0e" })
 	end,
 }

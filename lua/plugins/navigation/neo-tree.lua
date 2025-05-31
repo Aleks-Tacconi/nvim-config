@@ -6,7 +6,6 @@ return {
 		"nvim-lua/plenary.nvim",
 		"nvim-tree/nvim-web-devicons",
 		"MunifTanjim/nui.nvim",
-		"xiyaowong/transparent.nvim",
 	},
 
 	config = function()
@@ -23,7 +22,6 @@ return {
 
 		local function OpenNeoTree()
 			vim.cmd("Neotree filesystem reveal left")
-			vim.cmd("TransparentEnable")
 		end
 
 		vim.keymap.set("n", "<Leader>d", OpenNeoTree)
