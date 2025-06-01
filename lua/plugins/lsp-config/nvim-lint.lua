@@ -24,6 +24,8 @@ return {
 
         if vim.fn.filereadable(pylint_path) == 1 then
             lint.linters.pylint.cmd = pylint_path
+        else
+            lint.linters.pylint.cmd = "/bin/pylint"
         end
 
 		local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
