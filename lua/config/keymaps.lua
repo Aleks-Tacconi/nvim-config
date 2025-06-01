@@ -39,5 +39,24 @@ vim.keymap.set("n", "<leader>c", vim.lsp.buf.code_action)
 vim.keymap.set("n", ";", ":")
 
 -- Use control backspace to delete last word
-vim.keymap.set('i', '<C-H>', '<C-W>', { noremap = true, silent = true })
-vim.keymap.set('c', '<C-H>', '<C-W>', { noremap = true, silent = true })
+vim.keymap.set('i', '<C-H>', '<C-W>', opts)
+vim.keymap.set('c', '<C-H>', '<C-W>', opts)
+
+-- Diagnostic features
+vim.keymap.set('n', '<leader>p', function()
+    vim.diagnostic.open_float(0, {
+        scope = "line",
+        focusable = false,
+        border = "rounded",
+        source = "if_many",
+        header = "",
+        prefix = "",
+    })
+end, opts)
+
+vim.keymap.set('n', '<leader>m', function()
+    local current = vim.diagnostic.config().virtual_text
+    vim.diagnostic.config({virtual_text = not current})
+    local status = current and "Disabled" or "Enabled"
+    print("Inline diagnostics: " .. status)
+end, opts)
