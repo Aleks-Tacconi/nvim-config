@@ -4,9 +4,9 @@ return {
 	config = function()
 		local lint = require("lint")
 
-		-- NOTE: to use eslint_d you need to create a config using: npx eslint --init
 
-		lint.linters_by_ft = {
+		-- NOTE: to use eslint_d you need to create a config using: npx eslint --init
+		local enabled_linters = {
 			javascript = { "eslint_d" },
 			typescript = { "eslint_d" },
 			javascriptreact = { "eslint_d" },
@@ -20,20 +20,37 @@ return {
 			css = { "stylelint" },
 		}
 
-        local pylint_path = vim.fn.getcwd() .. "/venv/bin/pylint"
+		local lint_enabled = true
 
-        if vim.fn.filereadable(pylint_path) == 1 then
-            lint.linters.pylint.cmd = pylint_path
-        else
-            lint.linters.pylint.cmd = "/bin/pylint"
-        end
+		lint.linters_by_ft = vim.deepcopy(enabled_linters)
 
-		local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
+		vim.keymap.set("n", "<leader>tl", function()
+			lint_enabled = not lint_enabled
+			if lint_enabled then
+				lint.linters_by_ft = vim.deepcopy(enabled_linters)
+                vim.cmd("w")
+				print("Linting enabled")
+			else
+				lint.linters_by_ft = {}
+                vim.diagnostic.reset(nil, 0)
+				print("Linting disabled")
+			end
+		end, { desc = "Toggle All Linters" })
+
+		local pylint_path = vim.fn.getcwd() .. "/venv/bin/pylint"
+
+		if vim.fn.filereadable(pylint_path) == 1 then
+			lint.linters.pylint.cmd = pylint_path
+		else
+			lint.linters.pylint.cmd = "/bin/pylint"
+		end
 
 		lint.linters.checkstyle.args = {
 			"-c",
 			"sun_checks.xml",
 		}
+
+		local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
 
 		vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
 			group = lint_augroup,

@@ -103,7 +103,17 @@ return {
 
 		local servers = {
 			gopls = {},
-			pyright = {},
+			pyright = {
+				settings = {
+					python = {
+						analysis = {
+							autoSearchPaths = true,
+							diagnosticMode = "workspace",
+							useLibraryCodeForTypes = true,
+						},
+					},
+				},
+			},
 			lua_ls = {
 				settings = {
 					Lua = {
@@ -116,7 +126,7 @@ return {
 			cssls = {},
 			html = {},
 			lemminx = {},
-            bashls = {},
+			bashls = {},
 		}
 		local ensure_installed = vim.tbl_keys(servers or {})
 		vim.list_extend(ensure_installed, {
@@ -131,7 +141,7 @@ return {
 			"gopls",
 			"pylint",
 			"luacheck",
-            "bashls",
+			"bashls",
 			"stylelint",
 			"markdownlint",
 			"prettier",
