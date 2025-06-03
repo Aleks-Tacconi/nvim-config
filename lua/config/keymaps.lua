@@ -53,10 +53,3 @@ vim.keymap.set('n', '<leader>p', function()
         prefix = "",
     })
 end, opts)
-
-vim.keymap.set('n', '<leader>m', function()
-    local current = vim.diagnostic.config().virtual_text
-    vim.diagnostic.config({virtual_text = not current})
-    local status = current and "Disabled" or "Enabled"
-    print("Inline diagnostics: " .. status)
-end, opts)
