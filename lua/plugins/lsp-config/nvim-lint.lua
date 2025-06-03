@@ -4,7 +4,6 @@ return {
 	config = function()
 		local lint = require("lint")
 
-
 		-- NOTE: to use eslint_d you need to create a config using: npx eslint --init
 		local enabled_linters = {
 			javascript = { "eslint_d" },
@@ -23,16 +22,25 @@ return {
 		local lint_enabled = true
 
 		lint.linters_by_ft = vim.deepcopy(enabled_linters)
+		local lint_ns = lint.get_namespace("pylint")
 
 		vim.keymap.set("n", "<leader>tl", function()
 			lint_enabled = not lint_enabled
 			if lint_enabled then
 				lint.linters_by_ft = vim.deepcopy(enabled_linters)
-                vim.cmd("w")
+				vim.cmd("w")
 				print("Linting enabled")
 			else
 				lint.linters_by_ft = {}
-                vim.diagnostic.reset(nil, 0)
+
+				for _, linters in pairs(enabled_linters) do
+					local first_linter = linters[1]
+					if first_linter then
+						local ns = lint.get_namespace(first_linter)
+						vim.diagnostic.reset(ns, 0)
+					end
+				end
+
 				print("Linting disabled")
 			end
 		end, { desc = "Toggle All Linters" })
