@@ -22,10 +22,6 @@ return {
 			},
 		})
 
-		vim.keymap.set("n", "<Leader>m", function()
-            vim.cmd("Neotree reveal")
-		end)
-
 		vim.keymap.set("n", "<Leader>d", function()
 			vim.cmd("Neotree filesystem reveal left")
 		end)
