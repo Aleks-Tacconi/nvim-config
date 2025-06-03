@@ -101,11 +101,23 @@ return {
 		local capabilities = vim.lsp.protocol.make_client_capabilities()
 		capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
+		local poetry_python_path = vim.fn.trim(vim.fn.system("poetry env info -p")) .. "/bin/python"
+		local venv_python_path = vim.fn.getcwd() .. "/venv/bin/python"
+		local system_python_path = "/usr/bin/python"
+
+		local python_path = system_python_path
+		if vim.fn.filereadable(poetry_python_path) == 1 then
+			python_path = poetry_python_path
+		elseif vim.fn.filereadable(venv_python_path) == 1 then
+			python_path = venv_python_path
+		end
+
 		local servers = {
 			gopls = {},
 			pyright = {
 				settings = {
 					python = {
+                        pythonPath = python_path,
 						analysis = {
 							autoSearchPaths = true,
 							diagnosticMode = "workspace",

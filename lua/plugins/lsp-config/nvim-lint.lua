@@ -47,8 +47,13 @@ return {
 
 		local pylint_path = vim.fn.getcwd() .. "/venv/bin/pylint"
 
-		if vim.fn.filereadable(pylint_path) == 1 then
-			lint.linters.pylint.cmd = pylint_path
+		local poetry_venv = vim.fn.trim(vim.fn.system("poetry env info -p"))
+		local poetry_pylint_path = poetry_venv .. "/bin/pylint"
+
+		if vim.fn.filereadable(poetry_pylint_path) == 1 then
+			lint.linters.pylint.cmd = poetry_pylint_path
+		elseif vim.fn.filereadable(venv_pylint_path) == 1 then
+			lint.linters.pylint.cmd = venv_pylint_path
 		else
 			lint.linters.pylint.cmd = "/bin/pylint"
 		end
