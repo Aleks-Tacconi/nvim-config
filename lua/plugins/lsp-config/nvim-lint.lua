@@ -19,7 +19,7 @@ return {
 			css = { "stylelint" },
 		}
 
-		local lint_enabled = true
+		local lint_enabled = false
 
 		lint.linters_by_ft = vim.deepcopy(enabled_linters)
 		local lint_ns = lint.get_namespace("pylint")
