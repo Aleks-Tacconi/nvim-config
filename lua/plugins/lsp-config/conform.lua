@@ -25,6 +25,7 @@ return {
 			html = { "prettier" },
 			htmldjango = { "prettier" },
 			css = { "prettier" },
+			json = { "prettier" },
 			yaml = { "yamlfmt" },
 		},
 	},
