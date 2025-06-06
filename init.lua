@@ -15,6 +15,17 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	end,
 })
 
+-- Open pdfs in browser
+vim.api.nvim_create_autocmd("BufRead", {
+  pattern = "*.pdf",
+  callback = function()
+    local file = vim.fn.expand("%:p")
+    if file ~= "" then
+      vim.fn.system("brave '" .. file .. "' &")
+    end
+  end,
+})
+
 require("config/options")
 require("config/keymaps")
 
