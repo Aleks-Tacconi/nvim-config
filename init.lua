@@ -17,13 +17,14 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 
 -- Open pdfs in browser
 vim.api.nvim_create_autocmd("BufRead", {
-  pattern = "*.pdf",
-  callback = function()
-    local file = vim.fn.expand("%:p")
-    if file ~= "" then
-      vim.fn.system("brave '" .. file .. "' &")
-    end
-  end,
+	pattern = "*.pdf",
+	callback = function()
+		local file = vim.fn.expand("%:p")
+		if file ~= "" then
+			vim.fn.system("brave '" .. file .. "' &")
+            vim.cmd("Neotree")
+		end
+	end,
 })
 
 require("config/options")
