@@ -1,32 +1,35 @@
 return {
 	"nvim-telescope/telescope.nvim",
-	event = "VimEnter",
-	branch = "0.1.x",
-
-	dependencies = {
-		"nvim-lua/plenary.nvim",
-	},
-
+	tag = "0.1.8",
+	dependencies = { "nvim-lua/plenary.nvim" },
 	config = function()
+		local actions = require("telescope.actions")
+		local utils = require("utils.telescope")
+
 		require("telescope").setup({
-			pickers = {
-				find_files = {
-					previewer = true,
-					follow = true,
-				},
-				live_grep = {
-					previewer = true,
-					follow = true,
-				},
-			},
 			defaults = {
-				file_ignore_patterns = { "venv/*" },
+				mappings = {
+					i = {
+						["<C-j>"] = actions.move_selection_next,
+						["<C-k>"] = actions.move_selection_previous,
+					},
+				},
+				prompt_prefix = "   Search: ",
+				entry_prefix = "    ",
+				selection_caret = "   ",
+				border = true,
+				borderchars = { "", "", "", "▎", "▎", "", "", "▎" },
+			},
+			pickers = {
+				find_files = utils.picker_theme,
+				live_grep = utils.picker_theme,
+				diagnostics = utils.picker_theme,
+				lsp_references = utils.picker_theme,
+				lsp_definitions = utils.picker_theme,
+				lsp_implementations = utils.picker_theme,
+				lsp_document_symbols = utils.picker_theme,
+				lsp_workspace_symbols = utils.picker_theme,
 			},
 		})
-
-		local builtin = require("telescope.builtin")
-		vim.keymap.set("n", "<leader>sf", builtin.find_files)
-		vim.keymap.set("n", "<leader>sg", builtin.live_grep)
-		vim.keymap.set("n", "<leader>sd", builtin.diagnostics)
 	end,
 }

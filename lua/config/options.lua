@@ -1,62 +1,37 @@
-local options = {
-	number = true, -- Show line numbers
-	relativenumber = true, -- Enable relative line numbers
-	numberwidth = 4, -- Set line number column width
-	signcolumn = "yes", -- Always show the sign column
-	wrap = false, -- Disable line wrapping
-	cursorline = true, -- Highlight the current line
-	scrolloff = 8, -- Keep at least 8 lines above/below the cursor
-	sidescrolloff = 8, -- Keep at least 8 columns left/right of the cursor
-	termguicolors = true, -- Enable GUI colors in terminal
-	expandtab = true, -- Convert tabs to spaces
-	shiftwidth = 4, -- Number of spaces per indentation level
-	tabstop = 4, -- Number of spaces per tab
-	smartindent = true, -- Enable smart indentation
-	breakindent = true, -- Maintain indentation when wrapping lines
-	hlsearch = true, -- Highlight search matches
-	ignorecase = true, -- Ignore case in searches
-	smartcase = true, -- Case-sensitive if uppercase letters are used
-	mouse = "a", -- Enable mouse support
-	clipboard = "unnamedplus", -- Use system clipboard
-	laststatus = 3, -- Enable global status bar
-	showmode = false, -- Hide mode display (e.g., -- INSERT --)
-	completeopt = { "menuone", "noselect" }, -- Completion options
-	pumheight = 10, -- Popup menu height
-	timeoutlen = 1000, -- Timeout for mapped sequences (ms)
-	updatetime = 300, -- Faster update time for UI events (ms)
-	undofile = true, -- Enable persistent undo
-	swapfile = false, -- Disable swap file creation
-	backup = false, -- Disable backup file creation
-	writebackup = false, -- Prevent editing conflicts
-	splitbelow = true, -- Horizontal splits appear below
-	splitright = true, -- Vertical splits appear to the right
-	ruler = false, -- Disable ruler
-	showcmd = false, -- Disable cmd
-	spelllang = "en_us", -- Set spelling language
-	spell = true, -- enable spell check
-}
+vim.g.have_nerd_font = true
+vim.o.number = true
+vim.o.laststatus = 3
+vim.o.relativenumber = true
+vim.o.mouse = "a"
+vim.o.showmode = false
+vim.o.breakindent = true
+vim.o.undofile = true
+vim.o.swapfile = false
+vim.o.backup = false
+vim.o.writebackup = false
+vim.o.ignorecase = true
+vim.o.smartcase = true
+vim.o.signcolumn = "yes"
+vim.o.updatetime = 250
+vim.o.timeoutlen = 1000
+vim.o.splitright = true
+vim.o.splitbelow = true
+vim.o.inccommand = "split"
+vim.o.cursorline = true
+vim.o.scrolloff = 10
+vim.o.sidescrolloff = 10
+vim.o.confirm = true
+vim.o.wrap = false
+vim.o.expandtab = true
+vim.o.shiftwidth = 4
+vim.o.tabstop = 4
+vim.o.termguicolors = true
+vim.o.colorcolumn = "100"
 
-local globals = {
-	loaded_netrw = 1, -- Disable netrw
-	loaded_netrwPlugin = 1, -- Disable netrw
-	loaded_perl_provider = 0, -- Disable perl provider
-	loaded_ruby_provider = 0, -- Disable ruby provider
-	mapleader = " ", -- Set leader to space
-	maplocalleader = " ", -- Set leader to space
-	have_nerd_font = true, -- Tells nvim that nerd font is installed
-}
+vim.schedule(function()
+    vim.o.clipboard = "unnamedplus"
+end)
 
--- Treat hyphenated words as a single word in motions
 vim.opt.iskeyword:append("-")
+vim.opt.fillchars:append({ eob = " " })
 
-local function assign(dict, config)
-	for k, v in pairs(config) do
-		dict[k] = v
-	end
-end
-
-assign(vim.opt, options)
-assign(vim.g, globals)
-
--- Env
-vim.env.PYTHONPATH = vim.fn.getcwd()

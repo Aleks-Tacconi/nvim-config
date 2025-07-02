@@ -1,145 +1,88 @@
 return {
 	"nvim-lualine/lualine.nvim",
-	dependencies = { "nvim-tree/nvim-web-devicons" },
-	config = function()
-		local colors = {
-			ivoryMist = "#F8F8F0",
-			samuraiRed = "#E82424",
-			hazardOrange = "#FF9E3B",
-			mutedTeal = "#3BA7A4",
+	opts = function()
+		vim.opt.showmode = false
+		vim.opt.fillchars:append({ stl = "━", stlnc = "━" })
+
+		local icons = {
+			neovim = " ",
+			git = { branch = " " },
 		}
 
-		local function diag_count(severity)
-			return #vim.diagnostic.get(0, { severity = severity })
+		local function get_lualine_theme()
+			local theme = {}
+
+			for _, mode in ipairs({ "normal", "insert", "visual", "replace", "command" }) do
+				theme[mode] = {
+					a = { bg = "#333333", fg = "#f8f8f2", gui = "bold" },
+					b = { bg = "#2a2a2a", fg = "NONE" },
+					c = { bg = "NONE", fg = "NONE", gui = "bold" },
+					y = { bg = "#2a2a2a", },
+				}
+			end
+
+			return theme
 		end
 
-		require("lualine").setup({
+		return {
 			options = {
-				component_separators = " ",
-				section_separators = { left = " ", right = " " },
-				theme = {
-					normal = {
-						a = { fg = colors.ivoryMist, bg = "NONE" },
-						b = { fg = colors.ivoryMist, bg = "NONE" },
-						c = { fg = colors.ivoryMist, bg = "NONE" },
-						z = { fg = colors.ivoryMist, bg = "NONE" },
-					},
-					insert = { a = { fg = colors.ivoryMist, bg = "NONE" } },
-					visual = { a = { fg = colors.ivoryMist, bg = "NONE" } },
-					replace = { a = { fg = colors.ivoryMist, bg = "NONE" } },
-					command = { a = { fg = colors.ivoryMist, bg = "NONE" } },
-					inactive = {
-						a = { fg = colors.ivoryMist, bg = "NONE" },
-						b = { fg = colors.ivoryMist, bg = "NONE" },
-						c = { fg = colors.ivoryMist, bg = "NONE" },
-						z = { fg = colors.ivoryMist, bg = "NONE" },
+				globalstatus = vim.o.laststatus == 3,
+				component_separators = "",
+				section_separators = { left = "", right = "" },
+				theme = get_lualine_theme(),
+			},
+			sections = {
+				lualine_a = {
+					{
+						"mode",
+						icon = icons.neovim,
+						separator = { left = "", right = "" },
+						padding = { left = 1, right = 1 },
 					},
 				},
-				icons_enabled = true,
-				disabled_filetypes = {},
-				globalstatus = true,
-			},
-
-			sections = {
-				lualine_a = {},
 				lualine_b = {
 					{
-						function()
-							return " "
-						end,
-						cond = function()
-							return diag_count(vim.diagnostic.severity.ERROR) > 0
-								or diag_count(vim.diagnostic.severity.WARN) > 0
-								or diag_count(vim.diagnostic.severity.INFO) > 0
-						end,
-						color = { bg = "NONE", fg = "NONE" },
-						padding = { left = 0, right = 0 },
+						"branch",
+						icon = icons.git.branch,
+						separator = { left = "", right = "" },
 					},
-					-- error count element
-					{
-						function()
-							return "󰅚 " .. diag_count(vim.diagnostic.severity.ERROR)
-						end,
-						cond = function()
-							return diag_count(vim.diagnostic.severity.ERROR) > 0
-						end,
-						color = function()
-							return { fg = colors.samuraiRed, bg = "NONE" }
-						end,
-						padding = { left = 0, right = 0 },
-					},
-
-					-- warning count element
-					{
-						function()
-							local n = diag_count(vim.diagnostic.severity.WARN)
-							return "󰀪 " .. n
-						end,
-						cond = function()
-							return diag_count(vim.diagnostic.severity.WARN) > 0
-						end,
-						color = function()
-							local n = diag_count(vim.diagnostic.severity.WARN)
-							return { fg = colors.hazardOrange, bg = "NONE" }
-						end,
-						padding = { left = 0, right = 0 },
-					},
-
-					-- info count element
-					{
-						function()
-							return "󰋽 " .. diag_count(vim.diagnostic.severity.INFO)
-						end,
-						cond = function()
-							return diag_count(vim.diagnostic.severity.INFO) > 0
-						end,
-						color = function()
-							return { fg = colors.mutedTeal, bg = "NONE" }
-						end,
-						padding = { left = 0, right = 0 },
-					},
-
-					-- filename element
+				},
+				lualine_c = {
+					{ "%=", padding = 0 },
 					{
 						"filename",
-						file_status = false,
 						path = 1,
-						color = { fg = colors.ivoryMist, bg = "NONE" },
-						fmt = function(str)
-							return str ~= "" and str or "[No Name]"
+						icon = "",
+						separator = { left = "", right = "██" },
+						padding = 0,
+						color = function()
+							return "lualine_a_normal"
 						end,
-						padding = { left = 1, right = 0 },
-					},
-
-					-- if file is modified show plus sign [+]
-					{
-						function()
-							return vim.bo.modified and "[+]" or ""
-						end,
-						color = { fg = colors.hazardOrange, bg = "NONE", gui = "bold" },
-						cond = function()
-							return vim.bo.modified
-						end,
-						padding = { left = 1, right = 0 },
 					},
 				},
-
-				lualine_c = {},
 				lualine_x = {},
 				lualine_y = {
+                    {
+                        "filetype",
+						separator = { left = "", right = "" },
+						padding = { left = 1, right = 2 },
+                    }
+                },
+				lualine_z = {
 					{
-						"filetype",
-						colored = true,
-						icon_only = false,
-						color = { fg = colors.ivoryMist, bg = "NONE" },
+						function()
+							local lnum, col = unpack(vim.api.nvim_win_get_cursor(0))
+							local max = vim.api.nvim_buf_line_count(0)
+							local percent = (lnum == 1 and "TOP")
+								or (lnum == max and "BOT")
+								or string.format("%2d%%%%", math.floor(100 * lnum / max))
+							return string.format("%" .. string.len(vim.bo.textwidth) .. "d %s", col + 1, percent)
+						end,
+						separator = { left = "", right = "" },
+						padding = { left = 1, right = 1 },
 					},
 				},
-
-				lualine_z = {
-					{ "%l:%c", color = { fg = colors.ivoryMist, bg = "NONE" } },
-					{ "%p%%/%L", color = { fg = colors.ivoryMist, bg = "NONE" }, padding = { left = 0, right = 1 } },
-				},
 			},
-		})
+		}
 	end,
 }

@@ -1,7 +1,7 @@
 return {
 	"toppair/peek.nvim",
-    event = { "VeryLazy" },
-    build = "deno task --quiet build:fast",
+	event = { "VeryLazy" },
+	build = "deno task --quiet build:fast",
 	config = function()
 		require("peek").setup({
 			auto_load = true,
@@ -9,13 +9,12 @@ return {
 			syntax = true,
 			theme = "dark",
 			update_on_change = true,
-			app = "brave-browser-nightly",
+			app = "webview",
 			filetype = { "markdown", "html" },
 			throttle_at = 200000,
 			throttle_time = "auto",
 		})
-        vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
-        vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
-    end,
+		vim.api.nvim_create_user_command("PeekOpen", require("peek").open, {})
+		vim.api.nvim_create_user_command("PeekClose", require("peek").close, {})
+	end,
 }
-

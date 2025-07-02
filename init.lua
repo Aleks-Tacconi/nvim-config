@@ -1,9 +1,14 @@
--- Install lazy
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-	local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-	vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
-end ---@diagnostic disable-next-line: undefined-field
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
+	vim.fn.system({
+		"git",
+		"clone",
+		"--filter=blob:none",
+		"--branch=stable",
+		"https://github.com/folke/lazy.nvim.git",
+		lazypath,
+	})
+end
 vim.opt.rtp:prepend(lazypath)
 
 -- Highlight text when yanking (copying)
@@ -15,39 +20,24 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	end,
 })
 
--- Open pdfs in browser
-vim.api.nvim_create_autocmd("BufRead", {
-	pattern = "*.pdf",
-	callback = function()
-		local file = vim.fn.expand("%:p")
-		if file ~= "" then
-			vim.fn.system("brave '" .. file .. "' &")
-            vim.cmd("Neotree")
-		end
-	end,
-})
-
+require("config/globals")
 require("config/options")
+require("lazy").setup({
+	{ import = "lsp/plugins" },
+	{ import = "plugins/qol" },
+	{ import = "plugins/navigation" },
+	{ import = "plugins/appearance" },
+})
 require("config/keymaps")
 
-require("lazy").setup({
-	{ import = "plugins/appearance" },
-	{ import = "plugins/lsp-config" },
-	{ import = "plugins/navigation" },
-	{ import = "plugins/misc" },
-})
-
-local current_buf = vim.api.nvim_get_current_buf()
+-- load harpoon buffers
 local harpoon = require("harpoon")
 local marks = harpoon:list().items
+local current_buf = vim.api.nvim_get_current_buf()
+
 for _, mark in ipairs(marks) do
 	local file_path = mark.value
 	vim.cmd("edit " .. vim.fn.fnameescape(file_path))
 end
-vim.api.nvim_set_current_buf(current_buf)
 
-vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
-	border = "single",
-})
-vim.api.nvim_set_hl(0, "StatusLine", { bg = "#0e0e0e", fg = "#ffffff" })
-vim.api.nvim_set_hl(0, "StatusLineNC", { bg = "#0e0e0e", fg = "#666666" })
+vim.api.nvim_set_current_buf(current_buf)
