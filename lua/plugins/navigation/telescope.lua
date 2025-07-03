@@ -15,10 +15,8 @@ return {
 					},
 				},
 				prompt_prefix = "   Search: ",
-				entry_prefix = "    ",
-				selection_caret = "   ",
-				border = true,
-				borderchars = { "", "", "", "▎", "▎", "", "", "▎" },
+				entry_prefix = " ",
+				selection_caret = " ",
 			},
 			pickers = {
 				find_files = utils.picker_theme,

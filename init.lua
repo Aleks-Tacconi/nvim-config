@@ -17,7 +17,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	group = vim.api.nvim_create_augroup("kickstart-highlight-yank", { clear = true }),
 	callback = function()
 		vim.highlight.on_yank()
-	end,
+    end,
 })
 
 require("config/globals")
@@ -29,15 +29,3 @@ require("lazy").setup({
 	{ import = "plugins/appearance" },
 })
 require("config/keymaps")
-
--- load harpoon buffers
-local harpoon = require("harpoon")
-local marks = harpoon:list().items
-local current_buf = vim.api.nvim_get_current_buf()
-
-for _, mark in ipairs(marks) do
-	local file_path = mark.value
-	vim.cmd("edit " .. vim.fn.fnameescape(file_path))
-end
-
-vim.api.nvim_set_current_buf(current_buf)

@@ -12,15 +12,6 @@ return {
 			orig_refresh(...)
 		end
 
-		vim.api.nvim_create_autocmd("User", {
-			pattern = "OilEnter",
-			callback = function(_)
-				if oil.get_cursor_entry() then
-					oil.open_preview()
-				end
-			end,
-		})
-
 		local Path = require("plenary.path")
 		local function is_hidden_file(name, bufnr)
 			local dir = require("oil").get_current_dir(bufnr)
