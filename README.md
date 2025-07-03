@@ -1,7 +1,5 @@
 # Neovim Configuration
 
-![assets/Telescope.png](assets/Telescope.png)
-
 ## Installation
 
 1. Backup your current configuration (optional):
