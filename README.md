@@ -1,11 +1,6 @@
 # Neovim Configuration
 
-<table>
-    <tr>
-        <td><img src="assets/Main.png"/></td>
-        <td><img src="assets/Telescope.png"/></td>
-    </tr>
-</table>
+![assets/Telescope.png](assets/Telescope.png)
 
 ## Installation
 
