@@ -29,7 +29,15 @@ vim.keymap.set("n", "<leader>sd", function()
 	builtin.diagnostics()
 end)
 
-vim.keymap.set("n", ";", ":")
+local diagnostics_enabled = true
+vim.keymap.set("n", "<leader>tl", function()
+	diagnostics_enabled = not diagnostics_enabled
+	if diagnostics_enabled then
+		vim.diagnostic.enable()
+	else
+		vim.diagnostic.enable(false)
+	end
+end, opts)
 
 keymap("i", "<C-H>", "<C-W>", opts)
 keymap("c", "<C-H>", "<C-W>", opts)
