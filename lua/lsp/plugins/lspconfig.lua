@@ -29,11 +29,11 @@ return {
 			ensure_installed = ensure_installed,
 		})
 
-		local lspconfig = require("lspconfig")
 		for server, config in pairs(opts.servers) do
 			config.capabilities = require("blink.cmp").get_lsp_capabilities(config.capabilities)
 			config.on_attach = keymaps.on_attach
-			lspconfig[server].setup(config)
+            vim.lsp.config(server, config)
+            vim.lsp.enable(server)
 		end
 	end,
 }
