@@ -2,6 +2,13 @@ local opts = { noremap = true, silent = true }
 local keymap = vim.api.nvim_set_keymap
 local builtin = require("telescope.builtin")
 
+vim.api.nvim_create_autocmd("BufEnter", {
+    pattern = "*",
+    callback = function()
+        vim.o.winborder = "single"
+    end,
+})
+
 local function oil()
     local cwd = vim.fn.getcwd()
     cwd = cwd .. "/"
