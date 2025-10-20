@@ -14,8 +14,6 @@ end
 
 vim.keymap.set("n", "<leader>d", oil)
 
-vim.keymap.set("n", "<leader>m", ":RenderMarkdown toggle<CR>")
-
 vim.keymap.set("n", "<leader>sf", function()
 	vim.o.winborder = "none"
 	builtin.find_files()

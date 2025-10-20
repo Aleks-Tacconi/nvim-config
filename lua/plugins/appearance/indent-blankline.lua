@@ -5,4 +5,3 @@ return {
 		scope = { enabled = false },
 	},
 }
-

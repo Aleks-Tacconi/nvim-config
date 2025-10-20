@@ -28,9 +28,8 @@ vim.o.tabstop = 4
 vim.o.termguicolors = true
 
 vim.schedule(function()
-    vim.o.clipboard = "unnamedplus"
+	vim.o.clipboard = "unnamedplus"
 end)
 
 vim.opt.iskeyword:append("-")
 vim.opt.fillchars:append({ eob = " " })
-

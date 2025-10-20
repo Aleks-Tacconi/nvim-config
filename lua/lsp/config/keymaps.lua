@@ -18,7 +18,8 @@ function M.on_attach(_, bufnr)
 	end, { buffer = bufnr })
 	vim.keymap.set("n", "gi", builtin.lsp_implementations, { buffer = bufnr })
 	vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, { buffer = bufnr })
-	vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { buffer = bufnr })
+	-- vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { buffer = bufnr })
+	vim.keymap.set("n", "<leader>ca", require("actions-preview").code_actions, { buffer = bufnr })
 	vim.keymap.set("n", "<leader>p", open_float, { buffer = bufnr })
 end
 
