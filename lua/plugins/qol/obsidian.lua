@@ -15,6 +15,7 @@ return {
                 },
             },
             legacy_commands = false,
+            ui = { enable = false },
         })
 
         vim.keymap.set("n", "<leader>sb", ":Obsidian backlinks<CR>", { noremap = true, silent = true })

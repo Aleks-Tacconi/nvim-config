@@ -31,7 +31,7 @@ vim.o.spelllang = "en"
 vim.o.spellfile = vim.fn.expand("~/.config/nvim/spell/en.utf-8.add")
 
 vim.schedule(function()
-	vim.o.clipboard = "unnamedplus"
+    vim.o.clipboard = "unnamedplus"
 end)
 
 vim.opt.iskeyword:append("-")
