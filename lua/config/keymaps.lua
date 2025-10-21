@@ -2,50 +2,52 @@ local opts = { noremap = true, silent = true }
 local keymap = vim.api.nvim_set_keymap
 local builtin = require("telescope.builtin")
 
+vim.keymap.set("n", "z=", require("utils.spell").popup, opts)
+
 vim.api.nvim_create_autocmd("BufEnter", {
-    pattern = "*",
-    callback = function()
-        vim.o.winborder = "single"
-    end,
+	pattern = "*",
+	callback = function()
+		vim.o.winborder = "single"
+	end,
 })
 
 local function oil()
-    local cwd = vim.fn.getcwd()
-    cwd = cwd .. "/"
-    local path = vim.api.nvim_buf_get_name(0)
-    path = path:gsub("^oil:///", "/")
-    if path ~= cwd then
-        vim.cmd("Oil")
-    end
+	local cwd = vim.fn.getcwd()
+	cwd = cwd .. "/"
+	local path = vim.api.nvim_buf_get_name(0)
+	path = path:gsub("^oil:///", "/")
+	if path ~= cwd then
+		vim.cmd("Oil")
+	end
 end
 
 vim.keymap.set("n", "<leader>d", oil)
 
 vim.keymap.set("n", "<leader>sf", function()
-    vim.o.winborder = "none"
-    builtin.find_files()
+	vim.o.winborder = "none"
+	builtin.find_files()
 end)
 vim.keymap.set("n", "<leader>sg", function()
-    vim.o.winborder = "none"
-    builtin.live_grep()
+	vim.o.winborder = "none"
+	builtin.live_grep()
 end)
 vim.keymap.set("n", "<leader>sd", function()
-    vim.o.winborder = "none"
-    builtin.diagnostics()
+	vim.o.winborder = "none"
+	builtin.diagnostics()
 end)
 
 local diagnostics_enabled = true
 vim.keymap.set("n", "<leader>tl", function()
-    diagnostics_enabled = not diagnostics_enabled
-    if diagnostics_enabled then
-        vim.diagnostic.enable()
-    else
-        vim.diagnostic.enable(false)
-    end
+	diagnostics_enabled = not diagnostics_enabled
+	if diagnostics_enabled then
+		vim.diagnostic.enable()
+	else
+		vim.diagnostic.enable(false)
+	end
 end, opts)
 
 vim.keymap.set("n", "<leader>t", function()
-    require("snacks").terminal.toggle(nil, { interactive = true })
+	require("snacks").terminal.toggle(nil, { interactive = true })
 end, opts)
 
 keymap("i", "<C-H>", "<C-W>", opts)

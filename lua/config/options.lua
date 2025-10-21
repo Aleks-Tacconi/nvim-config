@@ -26,6 +26,9 @@ vim.o.expandtab = true
 vim.o.shiftwidth = 4
 vim.o.tabstop = 4
 vim.o.termguicolors = true
+vim.o.spell = true
+vim.o.spelllang = "en"
+vim.o.spellfile = vim.fn.expand("~/.config/nvim/spell/en.utf-8.add")
 
 vim.schedule(function()
 	vim.o.clipboard = "unnamedplus"
