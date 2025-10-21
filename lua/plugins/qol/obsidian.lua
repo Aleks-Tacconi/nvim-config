@@ -20,5 +20,6 @@ return {
 
         vim.keymap.set("n", "<leader>sb", ":Obsidian backlinks<CR>", { noremap = true, silent = true })
         vim.keymap.set("n", "<leader>st", ":Obsidian tags<CR>", { noremap = true, silent = true })
+        vim.keymap.set("n", "<leader>gd", ":Obsidian follow_link<CR>", { noremap = true, silent = true })
     end,
 }
