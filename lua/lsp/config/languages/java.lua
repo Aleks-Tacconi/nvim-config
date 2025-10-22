@@ -3,12 +3,38 @@ local cfg = utils.lang_server()
 
 local jdtls = require("jdtls")
 
+local home = vim.env.HOME
+local JDTLS_HOME = home .. "/.local/share/jdtls"
+
+local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ":p:h:t")
+local workspace_dir = home .. "/jdtls-workspace/" .. project_name
+
 -- readlink -f $(which java)
 -- nix eval --raw nixpkgs#jdt-language-server
 
 local bundles = {}
 
 cfg:add_server("jdtls", {
+	cmd = {
+		"/nix/store/7q3rrp1i89mgkqghd2d1yrr32xqz8g6w-openjdk-23.0.2+7/lib/openjdk/bin/java",
+		"-Declipse.application=org.eclipse.jdt.ls.core.id1",
+		"-Dosgi.bundles.defaultStartLevel=4",
+		"-Declipse.product=org.eclipse.jdt.ls.core.product",
+		"-Dlog.level=ALL",
+		"-Xmx1G",
+		"--add-modules=ALL-SYSTEM",
+		"--add-opens",
+		"java.base/java.util=ALL-UNNAMED",
+		"--add-opens",
+		"java.base/java.lang=ALL-UNNAMED",
+		"-jar",
+		"/nix/store/xrcbdqrzh0xbjr3rqal4vssmgvh9gpr7-jdt-language-server-1.46.1/share/java/jdtls/plugins/org.eclipse.equinox.launcher_1.7.0.v20250331-1702.jar",
+		"-configuration",
+		JDTLS_HOME .. "/config_linux",
+		"-data",
+		workspace_dir,
+	},
+
 	root_dir = require("jdtls.setup").find_root({ ".git", "mvnw", "pom.xml", "build.gradle" }),
 
 	settings = {
