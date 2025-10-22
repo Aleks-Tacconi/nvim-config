@@ -6,8 +6,10 @@ return {
 		{
 			"<leader>ff",
 			function()
-				require("conform").format({ async = true, lsp_format = "fallback" })
-				vim.cmd("%retab")
+				require("conform").format({
+					async = true,
+					lsp_format = "fallback",
+				})
 			end,
 			mode = "",
 		},
