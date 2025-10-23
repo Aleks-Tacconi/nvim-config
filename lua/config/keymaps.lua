@@ -46,10 +46,6 @@ vim.keymap.set("n", "<leader>tl", function()
 	end
 end, opts)
 
-vim.keymap.set("n", "<leader>t", function()
-	require("snacks").terminal.toggle(nil, { interactive = true })
-end, opts)
-
 keymap("i", "<C-H>", "<C-W>", opts)
 keymap("c", "<C-H>", "<C-W>", opts)
 
