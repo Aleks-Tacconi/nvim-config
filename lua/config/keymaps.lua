@@ -11,6 +11,13 @@ vim.api.nvim_create_autocmd("BufEnter", {
 	end,
 })
 
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "opencode",
+	callback = function()
+		vim.keymap.set({ "n", "i" }, "<S-CR>", "<Esc>o", { buffer = true })
+	end,
+})
+
 local function oil()
 	local cwd = vim.fn.getcwd()
 	cwd = cwd .. "/"
