@@ -85,7 +85,6 @@ Smalltalk
 LRG
 WebApps
 CS2800
-=======
 Axios
 js
 backend
@@ -193,6 +192,7 @@ ddd
 fa6
 arity
 ith
+<<<<<<< HEAD
 NoSQL
 PostrgreSQL
 SQLite
@@ -235,3 +235,9 @@ rollout
 standup
 Burndown
 YAGNI
+Args
+instance
+A1
+R1
+mili
+nullability

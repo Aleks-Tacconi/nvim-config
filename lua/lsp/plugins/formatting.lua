@@ -24,6 +24,10 @@ return {
 				command = "prettier",
 				prepend_args = { "--tab-width", "2", "--print-width", "300" },
 			},
+			sqlfluff = {
+				command = "sqlfluff lint",
+				prepend_args = { "--dialect=postgress" },
+			},
 		},
 	},
 }
