@@ -192,7 +192,6 @@ ddd
 fa6
 arity
 ith
-<<<<<<< HEAD
 NoSQL
 PostrgreSQL
 SQLite
@@ -245,3 +244,4 @@ preimage
 MD5
 SHA
 keccak
+YAGNI
