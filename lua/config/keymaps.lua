@@ -4,6 +4,23 @@ local builtin = require("telescope.builtin")
 
 vim.keymap.set("n", "z=", require("utils.spell").popup, opts)
 
+local feed = function(keys)
+    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
+        false)
+end
+
+vim.keymap.set("n", "zg", function()
+	vim.cmd("normal! zg")
+	feed("a")
+	feed("<Esc>")
+end, opts)
+
+vim.keymap.set("n", "zw", function()
+	vim.cmd("normal! zw")
+	feed("a")
+	feed("<Esc>")
+end, opts)
+
 vim.api.nvim_create_autocmd("BufEnter", {
 	pattern = "*",
 	callback = function()
@@ -54,7 +71,9 @@ vim.keymap.set("n", "<leader>tl", function()
 end, opts)
 
 keymap("i", "<C-H>", "<C-W>", opts)
+keymap("i", "<C><BS>", "<C-W>", opts)
 keymap("c", "<C-H>", "<C-W>", opts)
+keymap("c", "<C><BS>", "<C-W>", opts)
 
 keymap("n", "<C-h>", "<C-w>h", opts)
 keymap("n", "<C-j>", "<C-w>j", opts)
