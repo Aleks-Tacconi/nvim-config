@@ -11,12 +11,23 @@ local workspace_dir = home .. "/jdtls-workspace/" .. project_name
 
 -- readlink -f $(which java)
 -- nix eval --raw nixpkgs#jdt-language-server
+-- ..                    #vscode-extensions.vscjava.vscode-java-debug
+-- ..                    #vscode-extensions.vscjava.vscode-java-test
 
-local bundles = {}
+local bundles = {
+	vim.fn.glob(
+		"/nix/store/snzhiihk2gxwpri5624lav7bvsvks1b6-vscode-extension-vscjava-vscode-java-test-0.43.1/share/vscode/extensions/vscjava.vscode-java-test/server/*.jar",
+		true
+	),
+	vim.fn.glob(
+		"/nix/store/mjcgc0313ldifhhb35z8d004680kazp8-vscode-extension-vscjava-vscode-java-debug-0.58.2025022807/share/vscode/extensions/vscjava.vscode-java-debug/server/*.jar",
+		true
+	),
+}
 
 cfg:add_server("jdtls", {
 	cmd = {
-		"/nix/store/7q3rrp1i89mgkqghd2d1yrr32xqz8g6w-openjdk-23.0.2+7/lib/openjdk/bin/java",
+		"/nix/store/5ig1bv8vkdqjw4ijma8q88bl0hrzbkbb-openjdk-24.0.2+12/lib/openjdk/bin/java",
 		"-Declipse.application=org.eclipse.jdt.ls.core.id1",
 		"-Dosgi.bundles.defaultStartLevel=4",
 		"-Declipse.product=org.eclipse.jdt.ls.core.product",
@@ -28,7 +39,7 @@ cfg:add_server("jdtls", {
 		"--add-opens",
 		"java.base/java.lang=ALL-UNNAMED",
 		"-jar",
-		"/nix/store/xrcbdqrzh0xbjr3rqal4vssmgvh9gpr7-jdt-language-server-1.46.1/share/java/jdtls/plugins/org.eclipse.equinox.launcher_1.7.0.v20250331-1702.jar",
+		"/nix/store/wkyckfdj74z7gzk43fifla50vcyx3540-jdt-language-server-1.46.1/share/java/jdtls/plugins/org.eclipse.equinox.launcher_1.7.0.v20250331-1702.jar",
 		"-configuration",
 		JDTLS_HOME .. "/config_linux",
 		"-data",
@@ -46,8 +57,8 @@ cfg:add_server("jdtls", {
 				updateBuildConfiguration = "interactive",
 				runtimes = {
 					{
-						name = "JavaSE-23",
-						path = "/nix/store/7q3rrp1i89mgkqghd2d1yrr32xqz8g6w-openjdk-23.0.2+7/lib/openjdk",
+						name = "JavaSE-24",
+						path = "/nix/store/5ig1bv8vkdqjw4ijma8q88bl0hrzbkbb-openjdk-24.0.2+12/lib/openjdk/",
 					},
 				},
 			},
