@@ -1,4 +1,7 @@
 return {
-    "mfussenegger/nvim-jdtls",
-    ft = "java",
+	dependencies = {
+		"nvim-dap",
+	},
+	"mfussenegger/nvim-jdtls",
+	ft = "java",
 }
