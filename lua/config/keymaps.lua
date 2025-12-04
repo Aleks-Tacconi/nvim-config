@@ -15,6 +15,11 @@ vim.keymap.set("n", "zg", function()
 	feed("<Esc>")
 end, opts)
 
+
+vim.keymap.set("n", "<Space><Space>", function()
+    vim.fn.system("playerctl play-pause")
+end, opts)
+
 vim.keymap.set("n", "zw", function()
 	vim.cmd("normal! zw")
 	feed("a")
@@ -91,3 +96,17 @@ keymap("x", "<A-j>", ":move '>+1<CR>gv-gv", opts)
 keymap("x", "<A-k>", ":move '<-2<CR>gv-gv", opts)
 
 keymap("v", "p", '"_dP', opts)
+
+-- work for any upper/lower-case variant of cmds table
+local cmds = { "w", "q", "wq", "wqa", "wa" }
+for _, cmd in ipairs(cmds) do
+    local variants = { cmd:upper() }
+    for i = 1, #cmd do
+        local variant = cmd:sub(1, i):upper() .. cmd:sub(i + 1)
+        table.insert(variants, variant)
+    end
+
+    for _, v in ipairs(variants) do
+        vim.api.nvim_create_user_command(v, cmd, {})
+    end
+end
