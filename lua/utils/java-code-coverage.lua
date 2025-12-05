@@ -37,27 +37,17 @@ function M.parse_jacoco()
 	f:close()
 
 	M.coverage = {}
-	local count_lines = 0
 
 	-- Parse classes and methods
-	for class_block in content:gmatch("<class(.-)</class>") do
-		local file = class_block:match('sourcefilename="(.-)"')
-		if file then
-			M.coverage[file] = M.coverage[file] or {}
+	for file, block in content:gmatch('<sourcefile%s+name="([^"]-)">(.-)</sourcefile>') do
+		vim.notify(file)
+		M.coverage[file] = M.coverage[file] or {}
 
-			for method_block in class_block:gmatch("<method(.-)</method>") do
-				local start_line = tonumber(method_block:match('line="(%d+)"'))
-				local missed, covered = method_block:match('<counter type="LINE" missed="(%d+)" covered="(%d+)"')
-				if start_line and missed and covered then
-					missed, covered = tonumber(missed), tonumber(covered)
-					M.coverage[file][start_line] = (covered > 0) and "covered" or "missed"
-					count_lines = count_lines + 1
-				end
-			end
+		for nr, mi, ci in block:gmatch('<line%s+.-nr="(%d+)".-mi="(%d+)".-ci="(%d+)".-/>') do
+			nr, mi, ci = tonumber(nr), tonumber(mi), tonumber(ci)
+			M.coverage[file][nr] = (ci > 0) and "covered" or "missed"
 		end
 	end
-
-	vim.notify("Jacoco: parsed " .. count_lines .. " method lines")
 end
 
 -- Place signs for current buffer
