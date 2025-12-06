@@ -24,13 +24,17 @@ return {
 			},
 		})
 
-		vim.api.nvim_create_autocmd("BufEnter", {
-			callback = function()
-				local status_ok, neotest = pcall(require, "neotest")
-				if status_ok then
-					pcall(neotest.summary.open)
-				end
-			end,
-		})
+		--vim.api.nvim_create_autocmd("BufEnter", {
+		--	callback = function()
+		--		local status_ok, neotest = pcall(require, "neotest")
+		--		if status_ok then
+		--			pcall(neotest.summary.open)
+		--		end
+		--	end,
+		--})
+		--
+		vim.keymap.set("n", "<Leader>nt", function()
+			require("neotest").summary.toggle()
+		end)
 	end,
 }

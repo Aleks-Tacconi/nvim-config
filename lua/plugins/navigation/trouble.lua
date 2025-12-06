@@ -4,15 +4,15 @@ return {
 	event = "LspAttach",
 	opts = {},
 	keys = {
-		{ "<leader>tt", "<cmd>Trouble diagnostics toggle<cr>" },
+		{ "tt", "<cmd>Trouble diagnostics toggle<cr>" },
 		{
-			"<leader>tj",
+			"tj",
 			function()
 				require("trouble").next({ mode = "diagnostics", skip_groups = true, jump = true })
 			end,
 		},
 		{
-			"<leader>tk",
+			"tk",
 			function()
 				require("trouble").prev({ mode = "diagnostics", skip_groups = true, jump = true })
 			end,
