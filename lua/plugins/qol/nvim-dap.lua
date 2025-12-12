@@ -22,7 +22,6 @@ return {
 
 		require("jdtls.dap").setup_dap({ hotcodereplace = "auto" })
 
-
 		-- dap actions
 		vim.keymap.set("n", "<leader>bt", dap.toggle_breakpoint, {})
 		vim.keymap.set("n", "<leader>b1", dap.continue)
@@ -66,6 +65,41 @@ return {
 		end)
 
 		require("dap-python").setup(utils.get_path("python"))
+
+		dap.adapters.cppdbg = {
+			id = "cppdbg",
+			type = "executable",
+			command = "/nix/store/3n370qrly24cvjylzgnd0wiv9w9yw6wk-vscode-extension-ms-vscode-cpptools-1.25.3/share/vscode/extensions/ms-vscode.cpptools/debugAdapters/bin/OpenDebugAD7",
+		}
+
+		dap.configurations.cpp = {
+			{
+				name = "Launch file",
+				type = "cppdbg",
+				request = "launch",
+				program = function()
+					return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+				end,
+				cwd = "${workspaceFolder}",
+				stopAtEntry = true,
+			},
+			{
+				name = "Attach to gdbserver :1234",
+				type = "cppdbg",
+				request = "launch",
+				MIMode = "gdb",
+				miDebuggerServerAddress = "localhost:1234",
+				miDebuggerPath = "/usr/bin/gdb",
+				cwd = "${workspaceFolder}",
+				program = function()
+					return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+				end,
+			},
+		}
+
+		dap.configurations.c = dap.configurations.cpp
+		dap.configurations.rust = dap.configurations.cpp
+
 		require("dapui").setup({
 			layouts = {
 				{
