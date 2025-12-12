@@ -22,7 +22,6 @@ return {
 
 		require("jdtls.dap").setup_dap({ hotcodereplace = "auto" })
 
-
 		-- dap actions
 		vim.keymap.set("n", "<leader>bt", dap.toggle_breakpoint, {})
 		vim.keymap.set("n", "<leader>b1", dap.continue)
