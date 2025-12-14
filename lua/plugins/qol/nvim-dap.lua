@@ -1,4 +1,53 @@
 local utils = require("utils.lsp")
+local dbg_win = nil
+local dbg_buf = nil
+
+local function open_debug_help()
+	if dbg_win and vim.api.nvim_win_is_valid(dbg_win) then
+		return
+	end
+
+	dbg_buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(dbg_buf, 0, -1, false, {
+		"## DAP CHEATSHEET",
+		"",
+		"<leader>b1  Continue",
+		"<leader>b2  Step into",
+		"<leader>b3  Step over",
+		"<leader>b4  Step out",
+		"<leader>b6  Restart",
+		"<leader>b7  Terminate",
+		"<leader>b8  Disconnect",
+		"<leader>b9  Close Debugger",
+		"<leader>bh  Toggle Cheatsheet",
+	})
+
+	vim.bo[dbg_buf].modifiable = false
+	vim.bo[dbg_buf].bufhidden = "wipe"
+	vim.bo[dbg_buf].filetype = "markdown"
+
+	local width = 36
+	local height = 10
+
+	dbg_win = vim.api.nvim_open_win(dbg_buf, false, {
+		relative = "editor",
+		width = width,
+		height = height,
+		row = 3,
+		col = vim.o.columns - width - 2,
+		style = "minimal",
+		border = "rounded",
+		focusable = false,
+	})
+end
+
+local function close_debug_help()
+	if dbg_win and vim.api.nvim_win_is_valid(dbg_win) then
+		vim.api.nvim_win_close(dbg_win, true)
+	end
+	dbg_win = nil
+	dbg_buf = nil
+end
 
 return {
 	"mfussenegger/nvim-dap",
@@ -32,6 +81,17 @@ return {
 		vim.keymap.set("n", "<leader>b6", dap.restart)
 		vim.keymap.set("n", "<leader>b7", dap.terminate)
 		vim.keymap.set("n", "<leader>b8", dap.disconnect)
+		vim.keymap.set("n", "<leader>b9", function()
+			dapui.close()
+			close_debug_help()
+		end)
+		vim.keymap.set("n", "<leader>bh", function()
+			if dbg_win and vim.api.nvim_win_is_valid(dbg_win) then
+				close_debug_help()
+			else
+				open_debug_help()
+			end
+		end)
 
 		vim.keymap.set("n", "<leader>bs", function()
 			pickers
@@ -41,7 +101,6 @@ return {
 						results = {
 							"Debug Main Application",
 							"Debug Tests",
-							"Stop Debugging",
 						},
 					}),
 					sorter = conf.generic_sorter({}),
@@ -54,8 +113,6 @@ return {
 								require("jdtls.dap").test_class()
 							elseif selection[1] == "Debug Main Application" then
 								dap.continue()
-							elseif selection[1] == "Stop Debugging" then
-								dap.terminate()
 							end
 						end)
 						return true
@@ -73,26 +130,51 @@ return {
 		}
 
 		dap.configurations.cpp = {
+			-- {
+			-- 	name = "Attach to gdbserver :1234",
+			-- 	type = "cppdbg",
+			-- 	request = "launch",
+			-- 	MIMode = "gdb",
+			-- 	miDebuggerServerAddress = "localhost:1234",
+			-- 	miDebuggerPath = "/usr/bin/gdb",
+			-- 	cwd = "${workspaceFolder}",
+			-- 	program = function()
+			-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+			-- 	end,
+			-- },
+			-- {
+			-- 	name = "Launch file",
+			-- 	type = "cppdbg",
+			-- 	request = "launch",
+			-- 	program = function()
+			-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+			-- 	end,
+			-- 	cwd = "${workspaceFolder}",
+			-- 	stopAtEntry = true,
+			-- },
 			{
-				name = "Launch file",
+				name = "Christmas Project",
 				type = "cppdbg",
 				request = "launch",
-				program = function()
-					return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-				end,
 				cwd = "${workspaceFolder}",
 				stopAtEntry = true,
-			},
-			{
-				name = "Attach to gdbserver :1234",
-				type = "cppdbg",
-				request = "launch",
-				MIMode = "gdb",
-				miDebuggerServerAddress = "localhost:1234",
-				miDebuggerPath = "/usr/bin/gdb",
-				cwd = "${workspaceFolder}",
+
 				program = function()
-					return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+					vim.fn.system("rm -f a.out")
+					local cmd = "gcc -g -O0 -Wall -Werror -Wpedantic -o a.out main.c"
+					local result = vim.fn.system(cmd)
+
+					if vim.v.shell_error ~= 0 then
+						error("Build failed:\n" .. result)
+					end
+
+					return vim.fn.getcwd() .. "/a.out"
+				end,
+
+				args = function()
+					local input = vim.fn.input("Input file: ")
+					local algo = vim.fn.input("Algorithm (FCFS/SJF/RR): ")
+					return { input, algo }
 				end,
 			},
 		}
@@ -133,6 +215,13 @@ return {
 		end
 		dap.listeners.before.event_exited.dapui_config = function()
 			dapui.close()
+		end
+
+		dap.listeners.after.attach.debug_help = function()
+			open_debug_help()
+		end
+		dap.listeners.after.launch.debug_help = function()
+			open_debug_help()
 		end
 	end,
 }
