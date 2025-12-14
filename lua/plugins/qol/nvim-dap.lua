@@ -9,31 +9,30 @@ local function open_debug_help()
 
 	dbg_buf = vim.api.nvim_create_buf(false, true)
 	vim.api.nvim_buf_set_lines(dbg_buf, 0, -1, false, {
-		"## DAP CHEATSHEET",
-		"",
-		"<leader>b1  Continue",
-		"<leader>b2  Step into",
-		"<leader>b3  Step over",
-		"<leader>b4  Step out",
-		"<leader>b6  Restart",
-		"<leader>b7  Terminate",
-		"<leader>b8  Disconnect",
-		"<leader>b9  Close Debugger",
-		"<leader>bh  Toggle Cheatsheet",
+		"   b1 │ Continue",
+		"   b2 │ Step into",
+		"   b3 │ Step over",
+		"   b4 │ Step out",
+		"   b5 │ Step back",
+		"   b6 │ Restart",
+		"   b7 │ Terminate",
+		"   b8 │ Disconnect",
+		"   b9 │ Close",
+		"   bh │ Toggle",
 	})
 
 	vim.bo[dbg_buf].modifiable = false
 	vim.bo[dbg_buf].bufhidden = "wipe"
 	vim.bo[dbg_buf].filetype = "markdown"
 
-	local width = 36
+	local width = 24
 	local height = 10
 
 	dbg_win = vim.api.nvim_open_win(dbg_buf, false, {
 		relative = "editor",
 		width = width,
 		height = height,
-		row = 3,
+		row = 1,
 		col = vim.o.columns - width - 2,
 		style = "minimal",
 		border = "rounded",
@@ -203,25 +202,27 @@ return {
 				},
 			},
 		})
-
-		dap.listeners.before.attach.dapui_config = function()
-			dapui.open()
-		end
-		dap.listeners.before.launch.dapui_config = function()
-			dapui.open()
-		end
-		dap.listeners.before.event_terminated.dapui_config = function()
-			dapui.close()
-		end
-		dap.listeners.before.event_exited.dapui_config = function()
-			dapui.close()
-		end
-
 		dap.listeners.after.attach.debug_help = function()
 			open_debug_help()
 		end
 		dap.listeners.after.launch.debug_help = function()
 			open_debug_help()
+		end
+		dap.listeners.after.event_initialized["dapui_config"] = function()
+			dapui.open()
+			open_debug_help()
+		end
+		dap.listeners.before.event_terminated["dapui_config"] = function()
+			dapui.close()
+			close_debug_help()
+		end
+		dap.listeners.before.event_exited["dapui_config"] = function()
+			dapui.close()
+			close_debug_help()
+		end
+		dap.listeners.before.disconnect["dapui_config"] = function()
+			dapui.close()
+			close_debug_help()
 		end
 	end,
 }
