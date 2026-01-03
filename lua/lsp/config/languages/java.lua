@@ -1,6 +1,8 @@
 local utils = require("utils.lsp")
 local cfg = utils.lang_server()
 
+require("jdtls.dap").setup_dap({ hotcodereplace = "auto" })
+
 -- Auto-load coverage signs when entering a Java buffer, without running Maven
 vim.api.nvim_create_autocmd("BufEnter", {
 	pattern = "*.java",

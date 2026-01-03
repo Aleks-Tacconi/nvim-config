@@ -18,7 +18,7 @@ return {
 		notify_on_error = false,
 		formatters = {
 			prettier = {
-				prepend_args = { "--tab-width", "4", "--print-width", "300" },
+				prepend_args = { "--tab-width", "2", "--print-width", "100" },
 			},
 			prettier_markdown = {
 				command = "prettier",
