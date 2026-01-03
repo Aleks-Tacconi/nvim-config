@@ -1,5 +1,7 @@
 # Neovim Configuration
 
+![./assets/1.png](./assets/1.png)
+
 ## Installation
 
 1. Backup your current configuration (optional):

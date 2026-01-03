@@ -32,7 +32,7 @@ local function open_debug_help()
 		relative = "editor",
 		width = width,
 		height = height,
-		row = 1,
+		row = 0,
 		col = vim.o.columns - width - 2,
 		style = "minimal",
 		border = "rounded",
@@ -68,9 +68,19 @@ return {
 		local actions = require("telescope.actions")
 		local action_state = require("telescope.actions.state")
 
-		require("jdtls.dap").setup_dap({ hotcodereplace = "auto" })
-
 		-- dap actions
+		vim.keymap.set("n", "<leader>wa", function()
+			require("dapui").elements.watches.add()
+		end)
+
+		vim.keymap.set("v", "<leader>wa", function()
+			require("dapui").elements.watches.add(vim.fn.expand("<cword>"))
+		end)
+
+		vim.keymap.set("n", "<leader>wd", function()
+			require("dapui").elements.watches.remove()
+		end)
+
 		vim.keymap.set("n", "<leader>bt", dap.toggle_breakpoint, {})
 		vim.keymap.set("n", "<leader>b1", dap.continue)
 		vim.keymap.set("n", "<leader>b2", dap.step_into)
@@ -81,6 +91,7 @@ return {
 		vim.keymap.set("n", "<leader>b7", dap.terminate)
 		vim.keymap.set("n", "<leader>b8", dap.disconnect)
 		vim.keymap.set("n", "<leader>b9", function()
+			dap.terminate()
 			dapui.close()
 			close_debug_help()
 		end)
@@ -120,74 +131,13 @@ return {
 				:find()
 		end)
 
-		require("dap-python").setup(utils.get_path("python"))
-
-		dap.adapters.cppdbg = {
-			id = "cppdbg",
-			type = "executable",
-			command = "/nix/store/3n370qrly24cvjylzgnd0wiv9w9yw6wk-vscode-extension-ms-vscode-cpptools-1.25.3/share/vscode/extensions/ms-vscode.cpptools/debugAdapters/bin/OpenDebugAD7",
-		}
-
-		dap.configurations.cpp = {
-			-- {
-			-- 	name = "Attach to gdbserver :1234",
-			-- 	type = "cppdbg",
-			-- 	request = "launch",
-			-- 	MIMode = "gdb",
-			-- 	miDebuggerServerAddress = "localhost:1234",
-			-- 	miDebuggerPath = "/usr/bin/gdb",
-			-- 	cwd = "${workspaceFolder}",
-			-- 	program = function()
-			-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-			-- 	end,
-			-- },
-			-- {
-			-- 	name = "Launch file",
-			-- 	type = "cppdbg",
-			-- 	request = "launch",
-			-- 	program = function()
-			-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-			-- 	end,
-			-- 	cwd = "${workspaceFolder}",
-			-- 	stopAtEntry = true,
-			-- },
-			{
-				name = "Christmas Project",
-				type = "cppdbg",
-				request = "launch",
-				cwd = "${workspaceFolder}",
-				stopAtEntry = true,
-
-				program = function()
-					vim.fn.system("rm -f a.out")
-					local cmd = "gcc -g -O0 -Wall -Werror -Wpedantic -o a.out main.c"
-					local result = vim.fn.system(cmd)
-
-					if vim.v.shell_error ~= 0 then
-						error("Build failed:\n" .. result)
-					end
-
-					return vim.fn.getcwd() .. "/a.out"
-				end,
-
-				args = function()
-					local input = vim.fn.input("Input file: ")
-					local algo = vim.fn.input("Algorithm (FCFS/SJF/RR): ")
-					return { input, algo }
-				end,
-			},
-		}
-
-		dap.configurations.c = dap.configurations.cpp
-		dap.configurations.rust = dap.configurations.cpp
-
 		require("dapui").setup({
 			layouts = {
 				{
 					elements = {
-						{ id = "scopes", size = 0.70 },
-						{ id = "breakpoints", size = 0.30 },
-						-- { id = "watches", size = 0.40 },
+						{ id = "scopes", size = 0.60 },
+						{ id = "watches", size = 0.20 },
+						{ id = "breakpoints", size = 0.20 },
 					},
 					size = 40,
 					position = "left",
