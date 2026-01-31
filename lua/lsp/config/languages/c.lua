@@ -32,43 +32,46 @@ dap.configurations.cpp = {
 	-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
 	-- 	end,
 	-- },
-	-- {
-	-- 	name = "Launch file",
-	-- 	type = "cppdbg",
-	-- 	request = "launch",
-	-- 	program = function()
-	-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-	-- 	end,
-	-- 	cwd = "${workspaceFolder}",
-	-- 	stopAtEntry = true,
-	-- },
 	{
-		name = "Christmas Project",
+		name = "Launch file",
 		type = "cppdbg",
 		request = "launch",
+		program = function()
+			return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "function")
+		end,
 		cwd = "${workspaceFolder}",
 		stopAtEntry = true,
-
-		program = function()
-			vim.fn.system("rm -f a.out")
-			local cmd = "gcc -g -O0 -Wall -Werror -Wpedantic -o a.out main.c"
-			local result = vim.fn.system(cmd)
-
-			if vim.v.shell_error ~= 0 then
-				error("Build failed:\n" .. result)
-			end
-
-			return vim.fn.getcwd() .. "/a.out"
-		end,
-
 		args = function()
-			-- local input = vim.fn.input("Input file: ")
-			local input = "1.txt"
-			-- local algo = vim.fn.input("Algorithm (FCFS/SJF/RR): ")
-			local algo = "FCFS"
-			return { input, algo }
+			return { "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDD" }
 		end,
 	},
+	-- {
+	-- 	name = "Christmas Project",
+	-- 	type = "cppdbg",
+	-- 	request = "launch",
+	-- 	cwd = "${workspaceFolder}",
+	-- 	stopAtEntry = true,
+
+	-- 	program = function()
+	-- 		vim.fn.system("rm -f a.out")
+	-- 		local cmd = "gcc -g -O0 -Wall -Werror -Wpedantic -o a.out main.c"
+	-- 		local result = vim.fn.system(cmd)
+
+	-- 		if vim.v.shell_error ~= 0 then
+	-- 			error("Build failed:\n" .. result)
+	-- 		end
+
+	-- 		return vim.fn.getcwd() .. "/a.out"
+	-- 	end,
+
+	-- 	args = function()
+	-- 		-- local input = vim.fn.input("Input file: ")
+	-- 		local input = "1.txt"
+	-- 		-- local algo = vim.fn.input("Algorithm (FCFS/SJF/RR): ")
+	-- 		local algo = "FCFS"
+	-- 		return { input, algo }
+	-- 	end,
+	-- },
 }
 
 dap.configurations.c = dap.configurations.cpp
