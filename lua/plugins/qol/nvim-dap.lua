@@ -1,4 +1,3 @@
-local utils = require("utils.lsp")
 local dbg_win = nil
 local dbg_buf = nil
 
@@ -55,6 +54,13 @@ return {
 		{ "rcarriga/nvim-dap-ui", dependencies = { "nvim-neotest/nvim-nio" } },
 		"nvim-telescope/telescope.nvim",
 	},
+	keys = {
+		{ "<leader>bt", desc = "Toggle breakpoint" },
+		{ "<leader>bs", desc = "Debug session picker" },
+		{ "<leader>b1", desc = "DAP continue" },
+		{ "<leader>b9", desc = "DAP close" },
+	},
+	cmd = { "DapContinue", "DapToggleBreakpoint" },
 	config = function()
 		require("lazydev").setup({
 			library = { "nvim-dap-ui" },

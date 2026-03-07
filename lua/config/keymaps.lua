@@ -1,8 +1,7 @@
 local opts = { noremap = true, silent = true }
 local keymap = vim.api.nvim_set_keymap
-local builtin = require("telescope.builtin")
 
-vim.keymap.set("n", "z=", require("utils.spell").popup, opts)
+vim.keymap.set("n", "z=", function() require("utils.spell").popup() end, opts)
 
 local feed = function(keys)
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
@@ -54,15 +53,15 @@ vim.keymap.set("n", "<leader>d", oil)
 
 vim.keymap.set("n", "<leader>sf", function()
 	vim.o.winborder = "none"
-	builtin.find_files()
+	require("telescope.builtin").find_files()
 end)
 vim.keymap.set("n", "<leader>sg", function()
 	vim.o.winborder = "none"
-	builtin.live_grep()
+	require("telescope.builtin").live_grep()
 end)
 vim.keymap.set("n", "<leader>sd", function()
 	vim.o.winborder = "none"
-	builtin.diagnostics()
+	require("telescope.builtin").diagnostics()
 end)
 
 local diagnostics_enabled = true

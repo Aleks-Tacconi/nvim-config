@@ -8,25 +8,22 @@ local jdtls = require("jdtls")
 local cfg = utils.lang_server()
 local home = vim.env.HOME
 
--- Workspace & JDTLS config
+-- Workspace dir is cheap (no shell), compute eagerly.
 local project_name = vim.fn.fnamemodify(vim.fn.getcwd(), ":p:h:t")
 local workspace_dir = home .. "/.local/share/jdtls/workspace/" .. project_name
-local jdtls_config = home .. "/.local/share/jdtls/config_linux"
+local jdtls_config  = home .. "/.local/share/jdtls/config_linux"
 
--- Dynamically find current Java
-local java_home = vim.fn.trim(vim.fn.system("dirname $(dirname $(readlink -f $(which java)))"))
-
--- Dynamically find JDTLS launcher jar
-local jdtls_base = vim.fn.trim(vim.fn.system("nix eval --raw nixpkgs#jdt-language-server"))
+-- These two shell calls only run when this file is dofile'd, which now only
+-- happens on the first BufReadPre/FileType event for a Java buffer.
+local java_home   = vim.fn.trim(vim.fn.system("dirname $(dirname $(readlink -f $(which java)))"))
+local jdtls_base  = vim.fn.trim(vim.fn.system("nix eval --raw nixpkgs#jdt-language-server"))
 
 local launcher_glob = jdtls_base .. "/share/java/jdtls/plugins/org.eclipse.equinox.launcher_*.jar"
-
 local matches = vim.fn.glob(launcher_glob, true, true)
 assert(#matches == 1, "jdtls launcher jar not found or ambiguous")
-
 local jdtls_launcher = matches[1]
 
--- DAP/Test bundles
+-- DAP/Test bundles — glob nix store, cheap.
 local bundles = {}
 for _, pattern in ipairs({
 	"/nix/store/*-vscode-java-test-*/server/*.jar",
@@ -66,16 +63,11 @@ cfg:add_server("jdtls", {
 		"-Dlog.level=ALL",
 		"-Xmx1G",
 		"--add-modules=ALL-SYSTEM",
-		"--add-opens",
-		"java.base/java.util=ALL-UNNAMED",
-		"--add-opens",
-		"java.base/java.lang=ALL-UNNAMED",
-		"-jar",
-		jdtls_launcher,
-		"-configuration",
-		jdtls_config,
-		"-data",
-		workspace_dir,
+		"--add-opens", "java.base/java.util=ALL-UNNAMED",
+		"--add-opens", "java.base/java.lang=ALL-UNNAMED",
+		"-jar", jdtls_launcher,
+		"-configuration", jdtls_config,
+		"-data", workspace_dir,
 	},
 	root_dir = require("jdtls.setup").find_root({ ".git", "mvnw", "pom.xml", "build.gradle" }),
 	settings = {
