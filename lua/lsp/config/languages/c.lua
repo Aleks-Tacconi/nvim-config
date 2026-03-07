@@ -2,36 +2,32 @@ local utils = require("utils.lsp")
 local cfg = utils.lang_server()
 local dap = require("dap")
 
-local output = vim.fn.system({
-	"env",
-	"NIXPKGS_ALLOW_UNFREE=1",
-	"nix",
-	"eval",
-	"--impure",
-	"--raw",
-	"nixpkgs#vscode-extensions.ms-vscode.cpptools",
-})
-output = vim.trim(output)
+-- Resolve cpptools path lazily — only when the adapter is first invoked.
+-- nix eval takes ~0.8 s and is only needed for C/C++ debugging.
+local cpptools_path = nil
+local function get_cpptools_command()
+	if not cpptools_path then
+		local output = vim.fn.system({
+			"env",
+			"NIXPKGS_ALLOW_UNFREE=1",
+			"nix",
+			"eval",
+			"--impure",
+			"--raw",
+			"nixpkgs#vscode-extensions.ms-vscode.cpptools",
+		})
+		cpptools_path = vim.trim(output)
+	end
+	return cpptools_path .. "/share/vscode/extensions/ms-vscode.cpptools/debugAdapters/bin/OpenDebugAD7"
+end
 
 dap.adapters.cppdbg = {
 	id = "cppdbg",
 	type = "executable",
-	command = output .. "/share/vscode/extensions/ms-vscode.cpptools/debugAdapters/bin/OpenDebugAD7",
+	command = get_cpptools_command,
 }
 
 dap.configurations.cpp = {
-	-- {
-	-- 	name = "Attach to gdbserver :1234",
-	-- 	type = "cppdbg",
-	-- 	request = "launch",
-	-- 	MIMode = "gdb",
-	-- 	miDebuggerServerAddress = "localhost:1234",
-	-- 	miDebuggerPath = "/usr/bin/gdb",
-	-- 	cwd = "${workspaceFolder}",
-	-- 	program = function()
-	-- 		return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
-	-- 	end,
-	-- },
 	{
 		name = "Launch file",
 		type = "cppdbg",
@@ -45,33 +41,6 @@ dap.configurations.cpp = {
 			return { "AAAAAAAAAABBBBBBBBBBCCCCCCCCCCDDDDDDDDDD" }
 		end,
 	},
-	-- {
-	-- 	name = "Christmas Project",
-	-- 	type = "cppdbg",
-	-- 	request = "launch",
-	-- 	cwd = "${workspaceFolder}",
-	-- 	stopAtEntry = true,
-
-	-- 	program = function()
-	-- 		vim.fn.system("rm -f a.out")
-	-- 		local cmd = "gcc -g -O0 -Wall -Werror -Wpedantic -o a.out main.c"
-	-- 		local result = vim.fn.system(cmd)
-
-	-- 		if vim.v.shell_error ~= 0 then
-	-- 			error("Build failed:\n" .. result)
-	-- 		end
-
-	-- 		return vim.fn.getcwd() .. "/a.out"
-	-- 	end,
-
-	-- 	args = function()
-	-- 		-- local input = vim.fn.input("Input file: ")
-	-- 		local input = "1.txt"
-	-- 		-- local algo = vim.fn.input("Algorithm (FCFS/SJF/RR): ")
-	-- 		local algo = "FCFS"
-	-- 		return { input, algo }
-	-- 	end,
-	-- },
 }
 
 dap.configurations.c = dap.configurations.cpp
