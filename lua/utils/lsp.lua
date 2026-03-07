@@ -1,16 +1,31 @@
 local M = {}
 
+-- Cache poetry venv path per working directory to avoid repeated shell calls.
+local _poetry_cache = {}
+
+local function poetry_bin_dir()
+	local cwd = vim.fn.getcwd()
+	if _poetry_cache[cwd] == nil then
+		local out = vim.fn.trim(vim.fn.system("poetry env info -p 2>/dev/null"))
+		-- Store empty string on failure so we don't retry every call.
+		_poetry_cache[cwd] = (vim.v.shell_error == 0 and out ~= "") and (out .. "/bin/") or ""
+	end
+	return _poetry_cache[cwd]
+end
+
 function M.get_path(executable)
 	local base_paths = {
-		vim.fn.trim(vim.fn.system("poetry env info -p")) .. "/bin/",
+		poetry_bin_dir(),
 		vim.fn.getcwd() .. "/venv/bin/",
 		vim.fn.getcwd() .. "/.venv/bin/",
 	}
 
 	for _, base in ipairs(base_paths) do
-		local full_path = base .. executable
-		if vim.fn.filereadable(full_path) == 1 then
-			return full_path
+		if base ~= "" then
+			local full_path = base .. executable
+			if vim.fn.filereadable(full_path) == 1 then
+				return full_path
+			end
 		end
 	end
 
