@@ -26,6 +26,7 @@ return {
 	event = { "BufReadPre", "BufNewFile" },
 	config = function()
 		local ft_list = get_ft()
+		require("lint").linters.checkstyle.config_file = vim.fn.expand("~/.config/nvim/checkstyle.xml")
 
 		vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
 			group = vim.api.nvim_create_augroup("lint", { clear = true }),
