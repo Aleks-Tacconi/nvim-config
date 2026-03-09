@@ -55,7 +55,19 @@ return {
 				},
 				lualine_x = {},
 				lualine_y = { "branch" },
-				lualine_z = { "progress" },
+				lualine_z = {
+					{
+						function()
+							local ok, opencode = pcall(require, "opencode")
+							if not ok then
+								return ""
+							end
+
+							return opencode.statusline()
+						end,
+					},
+					"progress",
+				},
 			},
 			inactive_sections = {
 				lualine_a = {},

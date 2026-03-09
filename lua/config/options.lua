@@ -22,6 +22,7 @@ vim.o.scrolloff = 10
 vim.o.sidescrolloff = 10
 vim.o.confirm = true
 vim.o.wrap = false
+vim.o.autoread = true
 vim.o.expandtab = true
 vim.o.shiftwidth = 4
 vim.o.tabstop = 4
@@ -31,7 +32,7 @@ vim.o.spelllang = "en"
 vim.o.spellfile = vim.fn.expand("~/.config/nvim/spell/en.utf-8.add")
 
 vim.schedule(function()
-    vim.o.clipboard = "unnamedplus"
+	vim.o.clipboard = "unnamedplus"
 end)
 
 vim.opt.iskeyword:append("-")
