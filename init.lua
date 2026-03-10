@@ -20,6 +20,12 @@ vim.api.nvim_create_autocmd("TextYankPost", {
 	end,
 })
 
+vim.filetype.add({
+	extension = {
+		pl = "prolog",
+	},
+})
+
 require("config/globals")
 require("config/options")
 require("lazy").setup({
