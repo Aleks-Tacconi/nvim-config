@@ -19,7 +19,7 @@
   "markdown.nvim": { "branch": "master", "commit": "093be911d90de03877f3009de36081c1a6242d51" },
   "md-pdf.nvim": { "branch": "main", "commit": "d0bab77b6965dcd272c3221e6d42d30194d341e2" },
   "neotest": { "branch": "master", "commit": "deadfb1af5ce458742671ad3a013acb9a6b41178" },
-  "neotest-java": { "branch": "main", "commit": "a758fea5f6c9c951203f2509c78329ebd25bca79" },
+  "neotest-java": { "branch": "main", "commit": "9f5cf2ecef2375044103c7d3487abeada637a5cc" },
   "neotest-python": { "branch": "master", "commit": "b0d3a861bd85689d8ed73f0590c47963a7eb1bf9" },
   "nvim-autopairs": { "branch": "master", "commit": "59bce2eef357189c3305e25bc6dd2d138c1683f5" },
   "nvim-dap": { "branch": "master", "commit": "a9d8cb68ee7184111dc66156c4a2ebabfbe01bc5" },
