@@ -1,5 +1,59 @@
 local M = {}
 
+local severity_labels = {
+	[vim.diagnostic.severity.ERROR] = "ERROR",
+	[vim.diagnostic.severity.WARN] = "WARN",
+	[vim.diagnostic.severity.INFO] = "INFO",
+	[vim.diagnostic.severity.HINT] = "HINT",
+}
+
+local function normalize_message(message)
+	return (message or ""):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+end
+
+local function buffer_name(bufnr)
+	local name = vim.api.nvim_buf_get_name(bufnr)
+	if name == "" then
+		return "[No Name]"
+	end
+
+	return name
+end
+
+local function buffer_filetype(bufnr)
+	local filetype = vim.bo[bufnr].filetype
+	if filetype == "" then
+		return "text"
+	end
+
+	return filetype
+end
+
+local function send_prompt(lines)
+	require("opencode").prompt(table.concat(lines, "\n"), { submit = true })
+end
+
+local function send_code_range(bufnr, start_line, end_line)
+	if start_line > end_line then
+		start_line, end_line = end_line, start_line
+	end
+
+	local code_lines = vim.api.nvim_buf_get_lines(bufnr, start_line - 1, end_line, false)
+	if #code_lines == 0 then
+		vim.notify("No lines to send", vim.log.levels.INFO, { title = "opencode" })
+		return
+	end
+
+	local prompt_lines = {
+		string.format("Code from %s:%d-%d", buffer_name(bufnr), start_line, end_line),
+		"```" .. buffer_filetype(bufnr),
+		table.concat(code_lines, "\n"),
+		"```",
+	}
+
+	send_prompt(prompt_lines)
+end
+
 local function tmux(args)
 	local result = vim.system(vim.list_extend({ "tmux" }, args), { text = true }):wait()
 	if result.code ~= 0 then
@@ -58,16 +112,59 @@ function M.ensure_tmux_pane()
 	return created_pane
 end
 
-function M.focus_tmux_pane()
-	local pane_id = M.ensure_tmux_pane()
-	if pane_id == nil then
+function M.send_current_line()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local current_line = vim.api.nvim_win_get_cursor(0)[1]
+	send_code_range(bufnr, current_line, current_line)
+end
+
+function M.send_visual_lines()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local start_pos = vim.api.nvim_buf_get_mark(bufnr, "<")
+	local end_pos = vim.api.nvim_buf_get_mark(bufnr, ">")
+	local start_line = start_pos[1]
+	local end_line = end_pos[1]
+
+	if start_line == 0 or end_line == 0 then
+		vim.notify("No visual selection found", vim.log.levels.INFO, { title = "opencode" })
 		return
 	end
 
-	local _, err = tmux({ "select-pane", "-t", pane_id })
-	if err ~= nil and err ~= "" then
-		vim.notify(err, vim.log.levels.ERROR, { title = "opencode" })
+	send_code_range(bufnr, start_line, end_line)
+end
+
+function M.send_current_line_diagnostics()
+	local bufnr = vim.api.nvim_get_current_buf()
+	local current_line = vim.api.nvim_win_get_cursor(0)[1]
+	local line_text = vim.api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1] or ""
+	local diagnostics = vim.diagnostic.get(bufnr, { lnum = current_line - 1 })
+
+	if #diagnostics == 0 then
+		vim.notify("No diagnostics on current line", vim.log.levels.INFO, { title = "opencode" })
+		return
 	end
+
+	local diagnostic_lines = {}
+	for _, diagnostic in ipairs(diagnostics) do
+		local severity = severity_labels[diagnostic.severity] or "UNKNOWN"
+		local source = diagnostic.source and (" (" .. diagnostic.source .. ")") or ""
+		table.insert(
+			diagnostic_lines,
+			string.format("- %s%s: %s", severity, source, normalize_message(diagnostic.message))
+		)
+	end
+
+	local prompt_lines = {
+		string.format("Diagnostics for %s:%d", buffer_name(bufnr), current_line),
+		"Code:",
+		"```" .. buffer_filetype(bufnr),
+		line_text,
+		"```",
+		"Diagnostics:",
+	}
+	vim.list_extend(prompt_lines, diagnostic_lines)
+
+	send_prompt(prompt_lines)
 end
 
 return M

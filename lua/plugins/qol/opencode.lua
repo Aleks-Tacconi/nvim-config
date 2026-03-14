@@ -45,25 +45,26 @@ return {
 		{
 			"<leader>or",
 			function()
-				return require("opencode").operator("@this ")
+				require("utils.opencode").send_current_line()
 			end,
-			desc = "Send range to opencode",
-			expr = true,
-			mode = { "n", "x" },
+			desc = "Send current line to opencode",
+			mode = "n",
 		},
 		{
-			"<leader>on",
+			"<leader>or",
 			function()
-				require("opencode").command("session.new")
+				require("utils.opencode").send_visual_lines()
 			end,
-			desc = "Start new opencode session",
+			desc = "Send selected lines to opencode",
+			mode = "x",
 		},
 		{
-			"<leader>os",
+			"<leader>op",
 			function()
-				require("opencode").command("session.select")
+				require("utils.opencode").send_current_line_diagnostics()
 			end,
-			desc = "Select opencode session",
+			desc = "Send current line diagnostics to opencode",
+			mode = "n",
 		},
 		{
 			"<leader>oi",
@@ -78,13 +79,6 @@ return {
 				require("utils.opencode").ensure_tmux_pane()
 			end,
 			desc = "Open tmux opencode pane",
-		},
-		{
-			"<leader>of",
-			function()
-				require("utils.opencode").focus_tmux_pane()
-			end,
-			desc = "Focus tmux opencode pane",
 		},
 	},
 	config = function()
@@ -125,9 +119,5 @@ return {
 				reload = true,
 			},
 		}
-
-		vim.api.nvim_create_user_command("OpencodeTmux", function()
-			require("utils.opencode").ensure_tmux_pane()
-		end, { desc = "Open opencode in a tmux side pane" })
 	end,
 }

@@ -2,6 +2,7 @@ local utils = require("utils.lsp")
 local cfg = utils.lang_server()
 
 cfg:add_server("ts_ls", {})
+cfg:add_server("tailwindcss", {})
 cfg:set_formatters({ "javascript", "javascriptreact", "typescript", "typescriptreact" }, { "prettier" })
 cfg:set_linters({ "javascript", "javascriptreact", "typescript", "typescriptreact" }, { "eslint_d" })
 cfg:set_indent({ "javascript", "javascriptreact", "typescript", "typescriptreact" }, 2)
