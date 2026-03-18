@@ -29,8 +29,8 @@ local function buffer_filetype(bufnr)
 	return filetype
 end
 
-local function send_prompt(lines)
-	require("opencode").prompt(table.concat(lines, "\n"), { submit = true })
+local function send_prompt(lines, submit)
+	require("opencode").prompt(table.concat(lines, "\n"), { submit = submit })
 end
 
 local function send_code_range(bufnr, start_line, end_line)
@@ -164,7 +164,7 @@ function M.send_current_line_diagnostics()
 	}
 	vim.list_extend(prompt_lines, diagnostic_lines)
 
-	send_prompt(prompt_lines)
+	send_prompt(prompt_lines, false)
 end
 
 return M
