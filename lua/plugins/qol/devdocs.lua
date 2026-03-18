@@ -19,23 +19,6 @@ return {
 			desc = "Install Devdocs",
 		},
 		{
-			"<leader>iv",
-			mode = "n",
-			function()
-				local devdocs = require("devdocs")
-				local installedDocs = devdocs.GetInstalledDocs()
-				vim.ui.select(installedDocs, {}, function(selected)
-					if not selected then
-						return
-					end
-					local docDir = devdocs.GetDocDir(selected)
-					-- prettify the filename as you wish
-					Snacks.picker.files({ cwd = docDir })
-				end)
-			end,
-			desc = "Get Devdocs",
-		},
-		{
 			"<leader>id",
 			mode = "n",
 			"<cmd>DevDocs delete<cr>",
@@ -44,17 +27,33 @@ return {
 	},
 	opts = {
 		ensure_installed = {
+			"zsh",
 			"go",
 			"html",
-			-- "dom",
 			"http",
-			-- "css",
-			-- "javascript",
-			-- "rust",
-			-- some docs such as lua require version number along with the language name
-			-- check `DevDocs install` to view the actual names of the docs
+			"css",
+			"javascript",
+			"typescript",
+			"c",
+			"cpp",
+			"docker",
 			"lua~5.1",
-			"openjdk~25"
+			"react",
+			"postgresql~18",
+			"react_router",
+			"react_native",
+			"openjdk~25",
+			"python~3.13",
+			"pygame",
+			"numpy~2.4",
+			"pandas~2",
+			"cmake",
+			"django~6.0",
+			"flask",
+			"gtk~4.0",
+			"qt~6.9",
+			"matplotlib",
+			"nextjs",
 		},
 	},
 }
