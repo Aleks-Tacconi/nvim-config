@@ -1,6 +1,6 @@
 return {
     "stevearc/oil.nvim",
-    lazy = false,  -- oil needs to be loaded to handle `nvim .` and Oil keymaps
+    cmd = { "Oil" },
     config = function()
         local utils = require("utils.oil")
         local oil = require("oil")

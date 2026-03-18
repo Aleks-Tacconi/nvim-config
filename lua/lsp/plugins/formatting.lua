@@ -12,6 +12,7 @@ return {
 				})
 			end,
 			mode = "",
+			desc = "Format file",
 		},
 	},
 	opts = {

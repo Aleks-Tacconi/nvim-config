@@ -52,7 +52,7 @@ vim.api.nvim_create_autocmd("BufEnter", {
 -- Keymap to regenerate coverage with Maven
 vim.keymap.set("n", "<leader>jc", function()
 	require("utils.java-code-coverage").refresh()
-end, {})
+end, { desc = "Refresh Java coverage" })
 
 cfg:add_server("jdtls", {
 	cmd = {

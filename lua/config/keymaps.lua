@@ -1,29 +1,33 @@
-local opts = { noremap = true, silent = true }
-local keymap = vim.api.nvim_set_keymap
+local function map(mode, lhs, rhs, desc, extra_opts)
+	local opts = vim.tbl_extend("force", {
+		noremap = true,
+		silent = true,
+		desc = desc,
+	}, extra_opts or {})
 
-vim.keymap.set("n", "z=", function() require("utils.spell").popup() end, opts)
+	vim.keymap.set(mode, lhs, rhs, opts)
+end
+
+map("n", "z=", function()
+	require("utils.spell").popup()
+end, "Spell suggestions")
 
 local feed = function(keys)
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
         false)
 end
 
-vim.keymap.set("n", "zg", function()
+map("n", "zg", function()
 	vim.cmd("normal! zg")
 	feed("a")
 	feed("<Esc>")
-end, opts)
+end, "Add word to dictionary")
 
-
-vim.keymap.set("n", "<Space><Space>", function()
-    vim.fn.system("playerctl play-pause")
-end, opts)
-
-vim.keymap.set("n", "zw", function()
+map("n", "zw", function()
 	vim.cmd("normal! zw")
 	feed("a")
 	feed("<Esc>")
-end, opts)
+end, "Mark word as wrong")
 
 vim.api.nvim_create_autocmd("BufEnter", {
 	pattern = "*",
@@ -35,7 +39,7 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_autocmd("FileType", {
 	pattern = "opencode",
 	callback = function()
-		vim.keymap.set({ "n", "i" }, "<S-CR>", "<Esc>o", { buffer = true })
+		map({ "n", "i" }, "<S-CR>", "<Esc>o", "Insert line below", { buffer = true })
 	end,
 })
 
@@ -49,52 +53,54 @@ local function oil()
 	end
 end
 
-vim.keymap.set("n", "<leader>d", oil)
+map("n", "<leader>d", oil, "Open Oil")
 
-vim.keymap.set("n", "<leader>sf", function()
+map("n", "<leader>sf", function()
 	vim.o.winborder = "none"
 	require("telescope.builtin").find_files()
-end)
-vim.keymap.set("n", "<leader>sg", function()
+end, "Find files")
+
+map("n", "<leader>sg", function()
 	vim.o.winborder = "none"
 	require("telescope.builtin").live_grep()
-end)
-vim.keymap.set("n", "<leader>sd", function()
+end, "Live grep")
+
+map("n", "<leader>sd", function()
 	vim.o.winborder = "none"
 	require("telescope.builtin").diagnostics()
-end)
+end, "Search diagnostics")
 
 local diagnostics_enabled = true
-vim.keymap.set("n", "<leader>tl", function()
+map("n", "<leader>tl", function()
 	diagnostics_enabled = not diagnostics_enabled
 	if diagnostics_enabled then
 		vim.diagnostic.enable()
 	else
 		vim.diagnostic.enable(false)
 	end
-end, opts)
+end, "Toggle diagnostics")
 
-keymap("i", "<C-H>", "<C-W>", opts)
-keymap("i", "<C><BS>", "<C-W>", opts)
-keymap("c", "<C-H>", "<C-W>", opts)
-keymap("c", "<C><BS>", "<C-W>", opts)
+map("i", "<C-H>", "<C-W>", "Delete previous word")
+map("i", "<C><BS>", "<C-W>", "Delete previous word")
+map("c", "<C-H>", "<C-W>", "Delete previous word")
+map("c", "<C><BS>", "<C-W>", "Delete previous word")
 
-keymap("n", "<C-h>", "<C-w>h", opts)
-keymap("n", "<C-j>", "<C-w>j", opts)
-keymap("n", "<C-k>", "<C-w>k", opts)
-keymap("n", "<C-l>", "<C-w>l", opts)
+map("n", "<C-h>", "<C-w>h", "Move to left window")
+map("n", "<C-j>", "<C-w>j", "Move to lower window")
+map("n", "<C-k>", "<C-w>k", "Move to upper window")
+map("n", "<C-l>", "<C-w>l", "Move to right window")
 
-keymap("v", "<", "<gv", opts)
-keymap("v", ">", ">gv", opts)
+map("v", "<", "<gv", "Indent left and keep selection")
+map("v", ">", ">gv", "Indent right and keep selection")
 
-keymap("v", "<A-j>", ":m .+1<CR>==", opts)
-keymap("v", "<A-k>", ":m .-2<CR>==", opts)
-keymap("x", "J", ":move '>+1<CR>gv-gv", opts)
-keymap("x", "K", ":move '<-2<CR>gv-gv", opts)
-keymap("x", "<A-j>", ":move '>+1<CR>gv-gv", opts)
-keymap("x", "<A-k>", ":move '<-2<CR>gv-gv", opts)
+map("v", "<A-j>", ":m .+1<CR>==", "Move selection down")
+map("v", "<A-k>", ":m .-2<CR>==", "Move selection up")
+map("x", "J", ":move '>+1<CR>gv-gv", "Move block down")
+map("x", "K", ":move '<-2<CR>gv-gv", "Move block up")
+map("x", "<A-j>", ":move '>+1<CR>gv-gv", "Move block down")
+map("x", "<A-k>", ":move '<-2<CR>gv-gv", "Move block up")
 
-keymap("v", "p", '"_dP', opts)
+map("v", "p", '"_dP', "Paste without yanking")
 
 -- work for any upper/lower-case variant of cmds table
 local cmds = { "w", "q", "wq", "wqa", "wa" }

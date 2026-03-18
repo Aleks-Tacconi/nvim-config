@@ -30,7 +30,7 @@ local function buffer_filetype(bufnr)
 end
 
 local function send_prompt(lines)
-	require("opencode").prompt(table.concat(lines, "\n"), { submit = true })
+	require("opencode").prompt(table.concat(lines, "\n"), { submit = false })
 end
 
 local function send_code_range(bufnr, start_line, end_line)
@@ -97,8 +97,18 @@ function M.ensure_tmux_pane()
 		return pane_id
 	end
 
-	local created_pane, err =
-		tmux({ "split-window", "-h", "-d", "-l", "40%", "-P", "-F", "#{pane_id}", "opencode --port" })
+	local created_pane, err = tmux({
+		"split-window",
+		"-h",
+		"-d",
+		"-l",
+		"40%",
+		"-P",
+		"-F",
+		"#{pane_id}",
+		"opencode",
+		"--port",
+	})
 	if created_pane == nil then
 		vim.notify(
 			err ~= "" and err or "Failed to start tmux opencode pane",
