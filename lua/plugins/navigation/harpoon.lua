@@ -38,11 +38,11 @@ return {
         vim.keymap.set("n", "<leader>H", function()
             vim.o.winborder = "none"
             toggle_telescope(harpoon:list())
-        end)
+        end, { desc = "Harpoon picker" })
 
         vim.keymap.set("n", "<leader>h", function()
             harpoon.ui:toggle_quick_menu(harpoon:list())
-        end)
+        end, { desc = "Harpoon menu" })
 
         harpoon:setup({
             settings = {
@@ -54,12 +54,12 @@ return {
             harpoon:list():add()
             harpoon.ui:toggle_quick_menu(harpoon:list())
             harpoon.ui:toggle_quick_menu(harpoon:list())
-        end)
+        end, { desc = "Harpoon add file" })
 
         for i = 1, 8 do
             vim.keymap.set("n", "<leader>" .. i, function()
                 select(i)
-            end)
+            end, { desc = "Harpoon file " .. i })
         end
     end,
 }

@@ -12,7 +12,7 @@ return {
 	-- need to run the following for java:
 	-- :NeotestJava setup
 
-	keys = { { "<Leader>nt", function() require("neotest").summary.toggle() end } },
+	keys = { { "<Leader>nt", function() require("neotest").summary.toggle() end, desc = "Toggle test summary" } },
 	cmd = { "Neotest" },
 
 	config = function()
@@ -25,9 +25,5 @@ return {
 				require("neotest-java")({}),
 			},
 		})
-
-		vim.keymap.set("n", "<Leader>nt", function()
-			require("neotest").summary.toggle()
-		end)
 	end,
 }

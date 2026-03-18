@@ -18,9 +18,9 @@ return {
             ui = { enable = false },
         })
 
-        vim.keymap.set("n", "<leader>sb", ":Obsidian backlinks<CR>", { noremap = true, silent = true })
-        vim.keymap.set("n", "<leader>st", ":Obsidian tags<CR>", { noremap = true, silent = true })
-        vim.keymap.set("n", "<leader>gd", ":Obsidian follow_link<CR>", { noremap = true, silent = true })
-        vim.keymap.set("n", "<leader>o", ":Obsidian open<CR>", { noremap = true, silent = true })
+        vim.keymap.set("n", "<leader>sb", ":Obsidian backlinks<CR>", { noremap = true, silent = true, desc = "Obsidian backlinks" })
+        vim.keymap.set("n", "<leader>st", ":Obsidian tags<CR>", { noremap = true, silent = true, desc = "Obsidian tags" })
+        vim.keymap.set("n", "<leader>gd", ":Obsidian follow_link<CR>", { noremap = true, silent = true, desc = "Obsidian follow link" })
+        vim.keymap.set("n", "<leader>o", ":Obsidian open<CR>", { noremap = true, silent = true, desc = "Obsidian open" })
     end,
 }
