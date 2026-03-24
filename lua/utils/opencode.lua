@@ -174,7 +174,7 @@ function M.send_current_line_diagnostics()
 	}
 	vim.list_extend(prompt_lines, diagnostic_lines)
 
-	send_prompt(prompt_lines)
+	send_prompt(prompt_lines, false)
 end
 
 return M
