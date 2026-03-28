@@ -64,14 +64,23 @@ function M.lang_server()
 	end
 
 	function obj:set_indent(ft, indent)
+		local function apply(buf)
+			vim.bo[buf].tabstop = indent
+			vim.bo[buf].shiftwidth = indent
+			vim.bo[buf].softtabstop = indent
+		end
+
 		for _, filetype in ipairs(ft) do
 			vim.api.nvim_create_autocmd("FileType", {
 				pattern = filetype,
-				callback = function()
-					vim.opt_local.tabstop = indent
-					vim.opt_local.shiftwidth = indent
+				callback = function(ev)
+					apply(ev.buf)
 				end,
 			})
+		end
+
+		if vim.tbl_contains(ft, vim.bo.filetype) then
+			apply(0)
 		end
 	end
 

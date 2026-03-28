@@ -16,6 +16,7 @@ do
 	ft_to_file["javascriptreact"] = ft_to_file["javascript"]
 	ft_to_file["typescript"]      = ft_to_file["javascript"]
 	ft_to_file["typescriptreact"] = ft_to_file["javascript"]
+	ft_to_file["jsonc"]           = ft_to_file["json"]
 	ft_to_file["htmldjango"]      = ft_to_file["html"]
 	ft_to_file["cpp"]             = ft_to_file["c"]
 	ft_to_file["rust"]            = ft_to_file["c"]
