@@ -1,3 +1,6 @@
 return {
-	{ dir = "~/Projects/local-docs.nvim" },
+    dir = "~/Projects/rtfm.nvim",
+	config = function()
+		require("rtfm").setup({})
+	end,
 }

@@ -27,22 +27,6 @@ return {
 	},
 	keys = {
 		{
-			"<leader>oa",
-			function()
-				require("opencode").ask("@this: ", { submit = true })
-			end,
-			desc = "Ask opencode about selection",
-			mode = { "n", "x" },
-		},
-		{
-			"<leader>oe",
-			function()
-				require("opencode").select()
-			end,
-			desc = "Open opencode actions",
-			mode = { "n", "x" },
-		},
-		{
 			"<leader>or",
 			function()
 				require("utils.opencode").send_current_line()
@@ -65,13 +49,6 @@ return {
 			end,
 			desc = "Send current line diagnostics to opencode",
 			mode = "n",
-		},
-		{
-			"<leader>oi",
-			function()
-				require("opencode").command("session.interrupt")
-			end,
-			desc = "Interrupt opencode session",
 		},
 		{
 			"<leader>ot",
