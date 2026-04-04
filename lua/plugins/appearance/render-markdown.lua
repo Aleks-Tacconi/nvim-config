@@ -6,7 +6,7 @@ return {
 	opts = {
 		anti_conceal = { enabled = true },
 		render_modes = { "n", "c", "t", "i" },
-		file_types = { "markdown", "opencode_output" },
+		file_types = { "Avante", "copilot-chat", "opencode_output" },
 	},
-	ft = { "markdown", "Avante", "copilot-chat", "opencode_output" },
+	ft = { "Avante", "copilot-chat", "opencode_output" },
 }

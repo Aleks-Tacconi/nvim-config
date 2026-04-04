@@ -15,3 +15,9 @@
     ```sh
     git clone https://github.com/Aleks-Tacconi/nvim-config.git ~/.config/nvim
     ```
+
+3. Sync plugins and Treesitter parsers after installing or after a Neovim upgrade:
+
+    ```sh
+    nvim --headless "+Lazy! sync" "+TSUpdateSync" "+qa"
+    ```
