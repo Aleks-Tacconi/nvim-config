@@ -27,6 +27,7 @@ vim.filetype.add({
 })
 
 require("config/globals")
+require("config/compat")
 require("config/options")
 require("lazy").setup({
 	{ import = "lsp/plugins" },

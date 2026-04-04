@@ -6,6 +6,8 @@ vim.o.mouse = "a"
 vim.o.showmode = false
 vim.o.breakindent = true
 vim.o.undofile = true
+vim.o.undodir = vim.fn.stdpath("state") .. "/undo"
+vim.fn.mkdir(vim.o.undodir, "p")
 vim.o.swapfile = false
 vim.o.backup = false
 vim.o.writebackup = false
