@@ -15,8 +15,7 @@ function M.on_attach(_, bufnr)
     vim.keymap.set("n", "K", vim.lsp.buf.hover, { buffer = bufnr, desc = "Hover docs" })
     vim.keymap.set("n", "gi", builtin.lsp_implementations, { buffer = bufnr, desc = "Go to implementation" })
     vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, { buffer = bufnr, desc = "Rename symbol" })
-    -- vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { buffer = bufnr })
-    vim.keymap.set("n", "<leader>ca", require("actions-preview").code_actions, { buffer = bufnr, desc = "Code actions" })
+    vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { buffer = bufnr })
     vim.keymap.set("n", "<leader>p", open_float, { buffer = bufnr, desc = "Line diagnostics" })
 end
 
