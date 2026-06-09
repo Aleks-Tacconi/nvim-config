@@ -1,7 +1,7 @@
 local utils = require("utils.lsp")
 local cfg = utils.lang_server()
 
-	cfg:add_server("lua_ls", {
+cfg:add_server("lua_ls", {
 	settings = {
 		Lua = {
 			workspace = {

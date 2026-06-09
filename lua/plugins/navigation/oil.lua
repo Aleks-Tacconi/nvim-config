@@ -29,6 +29,10 @@ return {
         end
 
         oil.setup({
+            keymaps = {
+                ["<CR>"] = utils.open_with_default_app,
+                ["<2-LeftMouse>"] = utils.open_with_default_app,
+            },
             win_options = {
                 signcolumn = "yes",
             },

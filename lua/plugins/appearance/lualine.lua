@@ -1,101 +1,97 @@
 return {
-	"nvim-lualine/lualine.nvim",
-	dependencies = { "nvim-tree/nvim-web-devicons" },
-	init = function()
-		local rose_pine_lualine = {
-			normal = {
-				a = { fg = "#393552", bg = "#EA9A97", gui = "bold" },
-				b = { fg = "#EA9A97", bg = "#393552" },
-				c = { fg = "#cccccc", bg = "#1A1A1A" },
-			},
-			insert = {
-				a = { fg = "#393552", bg = "#9CCFD8", gui = "bold" },
-				b = { fg = "#9CCFD8", bg = "#393552" },
-				c = { fg = "#cccccc", bg = "#1A1A1A" },
-			},
-			visual = {
-				a = { fg = "#393552", bg = "#C4A7E7", gui = "bold" },
-				b = { fg = "#C4A7E7", bg = "#393552" },
-				c = { fg = "#cccccc", bg = "#1A1A1A" },
-			},
-			command = {
-				a = { fg = "#393552", bg = "#C4A7E7", gui = "bold" },
-				b = { fg = "#C4A7E7", bg = "#393552" },
-				c = { fg = "#cccccc", bg = "#1A1A1A" },
-			},
-		}
+    "nvim-lualine/lualine.nvim",
+    dependencies = { "nvim-tree/nvim-web-devicons" },
+    event = "VeryLazy",
+    config = function()
+        local theme = {
+            normal = {
+                a = { fg = "#c4a7e7", bg = "none" },
+                b = { fg = "#6e6a86", bg = "none" },
+                c = { fg = "#e0def4", bg = "none" },
+                x = { fg = "#6e6a86", bg = "none" },
+                y = { fg = "#6e6a86", bg = "none" },
+                z = { fg = "#6e6a86", bg = "none" },
+            },
+            insert = {
+                a = { fg = "#c4a7e7", bg = "none" },
+                b = { fg = "#6e6a86", bg = "none" },
+                c = { fg = "#e0def4", bg = "none" },
+                x = { fg = "#6e6a86", bg = "none" },
+                y = { fg = "#6e6a86", bg = "none" },
+                z = { fg = "#6e6a86", bg = "none" },
+            },
+            visual = {
+                a = { fg = "#c4a7e7", bg = "none" },
+                b = { fg = "#6e6a86", bg = "none" },
+                c = { fg = "#e0def4", bg = "none" },
+                x = { fg = "#6e6a86", bg = "none" },
+                y = { fg = "#6e6a86", bg = "none" },
+                z = { fg = "#6e6a86", bg = "none" },
+            },
+            replace = {
+                a = { fg = "#c4a7e7", bg = "none" },
+                b = { fg = "#6e6a86", bg = "none" },
+                c = { fg = "#e0def4", bg = "none" },
+                x = { fg = "#6e6a86", bg = "none" },
+                y = { fg = "#6e6a86", bg = "none" },
+                z = { fg = "#6e6a86", bg = "none" },
+            },
+            command = {
+                a = { fg = "#c4a7e7", bg = "none" },
+                b = { fg = "#6e6a86", bg = "none" },
+                c = { fg = "#e0def4", bg = "none" },
+                x = { fg = "#6e6a86", bg = "none" },
+                y = { fg = "#6e6a86", bg = "none" },
+                z = { fg = "#6e6a86", bg = "none" },
+            },
+            inactive = {
+                a = { fg = "#6e6a86", bg = "none" },
+                b = { fg = "#6e6a86", bg = "none" },
+                c = { fg = "#6e6a86", bg = "none" },
+                x = { fg = "#6e6a86", bg = "none" },
+                y = { fg = "#6e6a86", bg = "none" },
+                z = { fg = "#6e6a86", bg = "none" },
+            },
+        }
 
-		require("lualine").setup({
-			options = {
-				ignore_focus = { "neo-tree" },
-				icons_enabled = true,
-				theme = rose_pine_lualine,
-				component_separators = { left = "", right = "" },
-				section_separators = { left = "", right = "" },
-				disabled_filetypes = {
-					statusline = {},
-					winbar = {},
-				},
-				always_divide_middle = true,
-				always_show_tabline = true,
-				globalstatus = true,
-				refresh = {
-					statusline = 100,
-					tabline = 100,
-					winbar = 100,
-				},
-			},
-			sections = {
-				lualine_a = { "mode" },
-				lualine_b = { "diagnostics" },
-				lualine_c = {
-					function()
-						return "https://github.com/Aleks-Tacconi :)"
-					end,
-				},
-				lualine_x = {},
-				lualine_y = { "branch" },
-				lualine_z = {
-					{
-						function()
-							local ok, opencode = pcall(require, "opencode")
-							if not ok then
-								return ""
-							end
-
-							return opencode.statusline()
-						end,
-					},
-					"progress",
-				},
-			},
-			inactive_sections = {
-				lualine_a = {},
-				lualine_b = {},
-				lualine_c = { "filename" },
-				lualine_x = { "location" },
-				lualine_y = {},
-				lualine_z = {},
-			},
-			winbar = {},
-			tabline = {
-				lualine_a = {
-					"hostname",
-				},
-				lualine_b = {
-					function()
-						return ""
-					end,
-				},
-				lualine_c = {
-					function()
-						local file_path = vim.fn.expand("%:p")
-						return file_path:gsub("/", " » "):gsub("^ » ", "")
-					end,
-				},
-			},
-			inactive_winbar = {},
-			extensions = {},
-		})
-	end,
+        require("lualine").setup({
+            options = {
+                component_separators = { left = "", right = "" },
+                disabled_filetypes = {
+                    statusline = { "dashboard", "lazy" },
+                },
+                globalstatus = true,
+                icons_enabled = true,
+                section_separators = { left = "", right = "" },
+                theme = theme,
+            },
+            sections = {
+                lualine_a = {
+                    { "mode" },
+                },
+                lualine_b = { "branch", "diff" },
+                lualine_c = { { "filename", path = 1 } },
+                lualine_x = { "filetype" },
+                lualine_y = {},
+                lualine_z = {
+                    {
+                        function()
+                            local enc = vim.bo.fileencoding or vim.bo.encoding or "utf-8"
+                            local pos = vim.api.nvim_win_get_cursor(0)
+                            local line, col = pos[1], pos[2] + 1
+                            return enc .. " " .. line .. ":" .. col
+                        end,
+                    },
+                },
+            },
+            inactive_sections = {
+                lualine_a = {},
+                lualine_b = {},
+                lualine_c = { { "filename", path = 1, color = { fg = "#6e6a86" } } },
+                lualine_x = {},
+                lualine_y = {},
+                lualine_z = {},
+            },
+        })
+    end,
 }

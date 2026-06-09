@@ -40,7 +40,7 @@ return {
 				require("utils.opencode").send_visual_lines()
 			end,
 			desc = "Send selected lines to opencode",
-			mode = "x",
+			mode = "v",
 		},
 		{
 			"<leader>op",
@@ -59,37 +59,21 @@ return {
 		},
 	},
 	config = function()
-		local opencode_cmd = "opencode --port"
-		local terminal_opts = {
-			win = {
-				position = "right",
-				enter = false,
-				on_win = function(win)
-					require("opencode.terminal").setup(win.win)
-				end,
-			},
-		}
-
 		vim.g.opencode_opts = {
+			-- Reuse an existing `opencode --port` server instead of managing one in Neovim.
 			server = {
-				start = function()
-					require("snacks.terminal").open(opencode_cmd, terminal_opts)
-				end,
-				stop = function()
-					local terminal = require("snacks.terminal").get(opencode_cmd, terminal_opts)
-					if terminal ~= nil then
-						terminal:close()
-					end
-				end,
-				toggle = function()
-					require("snacks.terminal").toggle(opencode_cmd, terminal_opts)
-				end,
+				start = false,
+				stop = false,
+				toggle = false,
 			},
 			ask = {
 				prompt = "Ask opencode: ",
 			},
 			select = {
 				prompt = "opencode actions: ",
+				sections = {
+					server = false,
+				},
 			},
 			events = {
 				enabled = true,

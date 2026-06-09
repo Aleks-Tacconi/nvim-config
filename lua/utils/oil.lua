@@ -1,5 +1,60 @@
 local M = {}
 
+local external_extensions = {
+    avif = true,
+    bmp = true,
+    doc = true,
+    docx = true,
+    gif = true,
+    jpeg = true,
+    jpg = true,
+    mkv = true,
+    mov = true,
+    mp3 = true,
+    mp4 = true,
+    odp = true,
+    ods = true,
+    odt = true,
+    pdf = true,
+    png = true,
+    ppt = true,
+    pptx = true,
+    svg = true,
+    tiff = true,
+    wav = true,
+    webp = true,
+    xls = true,
+    xlsx = true,
+    zip = true,
+}
+
+local function extension_for(name)
+    return name:match("%.([^%.]+)$") or ""
+end
+
+function M.open_with_default_app()
+    local oil = require("oil")
+    local actions = require("oil.actions")
+    local entry = oil.get_cursor_entry()
+
+    if not entry then
+        return
+    end
+
+    if entry.type == "directory" then
+        actions.select.callback()
+        return
+    end
+
+    local extension = extension_for(entry.name):lower()
+    if external_extensions[extension] then
+        actions.open_external.callback()
+        return
+    end
+
+    actions.select.callback()
+end
+
 local function parse_output(proc)
     local result = proc:wait()
     local ret = {}

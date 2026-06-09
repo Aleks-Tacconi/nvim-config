@@ -32,6 +32,7 @@ vim.o.termguicolors = true
 vim.o.spell = false
 vim.o.spelllang = "en"
 vim.o.spellfile = vim.fn.expand("~/.config/nvim/spell/en.utf-8.add")
+vim.o.colorcolumn = "100"
 
 vim.api.nvim_create_autocmd("FileType", {
 	group = vim.api.nvim_create_augroup("local-spell", { clear = true }),

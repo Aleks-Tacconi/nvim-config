@@ -2,7 +2,7 @@
 
 A personal and opinionated Neovim config. Features include:
 
-- LSP, diagnostics, completion, and snippets
+- LSP, diagnostics, completion, GitHub Copilot suggestions, and snippets
 - File, buffer, and project navigation
 - Git, testing, and debugging tools
 - Markdown and MDX support with general editing quality-of-life

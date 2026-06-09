@@ -30,7 +30,18 @@ local function buffer_filetype(bufnr)
 end
 
 local function send_prompt(lines)
-	require("opencode").prompt(table.concat(lines, "\n"), { submit = false })
+	require("opencode").prompt(table.concat(lines, "\n") .. "\n", { submit = false })
+end
+
+local function get_visual_line_range(bufnr)
+	local mode = vim.fn.mode()
+	if mode == "v" or mode == "V" or mode == "\22" then
+		return vim.fn.line("v"), vim.api.nvim_win_get_cursor(0)[1]
+	end
+
+	local start_pos = vim.api.nvim_buf_get_mark(bufnr, "<")
+	local end_pos = vim.api.nvim_buf_get_mark(bufnr, ">")
+	return start_pos[1], end_pos[1]
 end
 
 local function send_code_range(bufnr, start_line, end_line)
@@ -130,10 +141,7 @@ end
 
 function M.send_visual_lines()
 	local bufnr = vim.api.nvim_get_current_buf()
-	local start_pos = vim.api.nvim_buf_get_mark(bufnr, "<")
-	local end_pos = vim.api.nvim_buf_get_mark(bufnr, ">")
-	local start_line = start_pos[1]
-	local end_line = end_pos[1]
+	local start_line, end_line = get_visual_line_range(bufnr)
 
 	if start_line == 0 or end_line == 0 then
 		vim.notify("No visual selection found", vim.log.levels.INFO, { title = "opencode" })
@@ -171,6 +179,7 @@ function M.send_current_line_diagnostics()
 		line_text,
 		"```",
 		"Diagnostics:",
+        " ",
 	}
 	vim.list_extend(prompt_lines, diagnostic_lines)
 
