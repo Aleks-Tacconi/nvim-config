@@ -72,3 +72,20 @@ map("x", "<A-j>", ":move '>+1<CR>gv-gv", "Move block down")
 map("x", "<A-k>", ":move '<-2<CR>gv-gv", "Move block up")
 
 map("v", "p", '"_dP', "Paste without yanking")
+
+map("n", "<C-l>", ":cnext<CR>", "Next quickfix item")
+map("n", "<C-h>", ":cprev<CR>", "Previous quickfix item")
+
+-- work for any upper/lower-case variant of cmds table
+local cmds = { "w", "q", "wq", "wqa", "wa" }
+for _, cmd in ipairs(cmds) do
+    local variants = { cmd:upper() }
+    for i = 1, #cmd do
+        local variant = cmd:sub(1, i):upper() .. cmd:sub(i + 1)
+        table.insert(variants, variant)
+    end
+
+    for _, v in ipairs(variants) do
+        vim.api.nvim_create_user_command(v, cmd, {})
+    end
+end
