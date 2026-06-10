@@ -20,6 +20,8 @@ do
 	ft_to_file["htmldjango"]      = ft_to_file["html"]
 	ft_to_file["cpp"]             = ft_to_file["c"]
 	ft_to_file["rust"]            = ft_to_file["c"]
+	ft_to_file["markdown"]        = ft_to_file["python"]
+	ft_to_file["quarto"]          = ft_to_file["python"]
 end
 
 local loaded = {}
@@ -51,7 +53,7 @@ return {
 		{ "j-hui/fidget.nvim", opts = { notification = { override_vim_notify = true } } },
 		"saghen/blink.cmp",
 	},
-	event = { "BufReadPre", "BufNewFile" },
+	event = { "BufReadPre", "BufNewFile", "VimEnter" },
 	config = function()
 		require("lsp.config.diagnostics")
 		local keymaps = require("lsp.config.keymaps")
@@ -63,7 +65,7 @@ return {
 		end
 
 		-- Also handle any future filetype changes (e.g. new buffers opened later).
-		vim.api.nvim_create_autocmd({ "FileType" }, {
+		vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
 			callback = function(ev)
 				local buf_ft = vim.bo[ev.buf].filetype
 				if buf_ft ~= "" then
@@ -71,5 +73,12 @@ return {
 				end
 			end,
 		})
+
+		vim.schedule(function()
+			local current_ft = vim.bo.filetype
+			if current_ft ~= "" then
+				load_for_ft(current_ft, keymaps)
+			end
+		end)
 	end,
 }
