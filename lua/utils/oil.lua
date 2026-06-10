@@ -7,7 +7,6 @@ local external_extensions = {
     docx = true,
     gif = true,
     jpeg = true,
-    ipynb = true,
     jpg = true,
     mkv = true,
     mov = true,
