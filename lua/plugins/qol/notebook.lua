@@ -100,22 +100,8 @@ return {
         end,
       })
 
-      vim.keymap.set("n", "<localleader>e", function()
-        enable_molten_virtual_output()
-        vim.cmd("MoltenEvaluateOperator")
-      end, { desc = "evaluate operator", silent = true })
-      vim.keymap.set("v", "<localleader>r", function()
-        enable_molten_virtual_output()
-        vim.cmd("'<,'>MoltenEvaluateVisual")
-        vim.cmd("normal! gv")
-      end, { desc = "execute visual selection", silent = true })
-      vim.keymap.set("n", "<localleader>rr", function()
-        enable_molten_virtual_output()
-        vim.cmd("MoltenReevaluateCell")
-      end, { desc = "re-eval cell", silent = true })
       vim.keymap.set("n", "<localleader>os", enter_molten_output, { desc = "open output window", silent = true })
       vim.keymap.set("n", "<localleader>oh", hide_molten_output, { desc = "hide output", silent = true })
-      vim.keymap.set("n", "<leader>oh", hide_molten_output, { desc = "hide output", silent = true })
     end,
   },
 
