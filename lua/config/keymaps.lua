@@ -12,22 +12,19 @@ map("n", "z=", function()
 	require("config.telescope").spell_suggestions()
 end, "Spell suggestions")
 
-local feed = function(keys)
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
-        false)
-end
+vim.api.nvim_create_autocmd("BufEnter", {
+	pattern = "*",
+	callback = function()
+		vim.o.winborder = "single"
+	end,
+})
 
-map("n", "zg", function()
-	require("utils.vale").learn("zg")
-	feed("a")
-	feed("<Esc>")
-end, "Add word to dictionary")
-
-map("n", "zw", function()
-	require("utils.vale").learn("zw")
-	feed("a")
-	feed("<Esc>")
-end, "Mark word as wrong")
+vim.api.nvim_create_autocmd("FileType", {
+	pattern = "opencode",
+	callback = function()
+		map({ "n", "i" }, "<S-CR>", "<Esc>o", "Insert line below", { buffer = true })
+	end,
+})
 
 local function oil()
 	local cwd = vim.fn.getcwd()
