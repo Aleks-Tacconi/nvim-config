@@ -12,25 +12,6 @@ map("n", "z=", function()
 	require("utils.spell").popup()
 end, "Spell suggestions")
 
-require("utils.vale").setup()
-
-local feed = function(keys)
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
-        false)
-end
-
-map("n", "zg", function()
-	require("utils.vale").learn("zg")
-	feed("a")
-	feed("<Esc>")
-end, "Add word to dictionary")
-
-map("n", "zw", function()
-	require("utils.vale").learn("zw")
-	feed("a")
-	feed("<Esc>")
-end, "Mark word as wrong")
-
 vim.api.nvim_create_autocmd("BufEnter", {
 	pattern = "*",
 	callback = function()
