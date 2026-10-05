@@ -4,6 +4,7 @@ vim.o.laststatus = 3
 vim.o.relativenumber = true
 vim.o.mouse = "a"
 vim.o.showmode = false
+vim.o.ruler = false
 vim.o.breakindent = true
 vim.o.undofile = true
 vim.o.undodir = vim.fn.stdpath("state") .. "/undo"
@@ -29,17 +30,10 @@ vim.o.expandtab = true
 vim.o.shiftwidth = 4
 vim.o.tabstop = 4
 vim.o.termguicolors = true
+vim.o.winborder = "single"
 vim.o.spell = false
 vim.o.spelllang = "en"
 vim.o.spellfile = vim.fn.expand("~/.config/nvim/spell/en.utf-8.add")
-
-vim.api.nvim_create_autocmd("FileType", {
-	group = vim.api.nvim_create_augroup("local-spell", { clear = true }),
-	pattern = { "markdown", "text", "gitcommit" },
-	callback = function()
-		vim.opt_local.spell = true
-	end,
-})
 
 vim.schedule(function()
 	vim.o.clipboard = "unnamedplus"

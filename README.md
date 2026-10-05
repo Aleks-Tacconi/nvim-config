@@ -24,6 +24,7 @@ Optional but useful:
 
 - `lazygit`
 - language-specific LSPs, formatters, and debuggers (See my [NixOS config](https://github.com/Aleks-Tacconi/NixOSConfig) for more details)
+- for QML projects, expose your Qt/QML modules through `QML_IMPORT_PATH` or `QML2_IMPORT_PATH` so `qmlls` can resolve imports
 
 ## Setup
 
@@ -49,7 +50,9 @@ Optional but useful:
 
 ## Structure
 
-- `lua/config/` for globals, options, keymaps, and compatibility shims
+- `lua/config/` for globals, options, keymaps, commands, filetypes, and autocmds
+- `lua/config/dap/` for debug UI and adapter setup
+- `lua/config/telescope.lua` for Telescope setup and custom pickers
 - `lua/plugins/navigation/` for search and movement plugins
 - `lua/plugins/qol/` for editing, git, markdown, testing, and debugging
 - `lua/plugins/appearance/` for UI and theme-related plugins
@@ -58,5 +61,9 @@ Optional but useful:
 ## Useful Files
 
 - General keymaps: `lua/config/keymaps.lua`
+- Core autocmds: `lua/config/autocmds.lua`
+- Command aliases: `lua/config/commands.lua`
+- Kanagawa theme setup: `lua/plugins/appearance/kanagawa.lua`
+- Telescope setup and pickers: `lua/config/telescope.lua`
 - LSP keymaps: `lua/lsp/config/keymaps.lua`
 - Main plugin loading: `init.lua`

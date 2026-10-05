@@ -1,6 +1,5 @@
 return {
 	"nickjvandyke/opencode.nvim",
-	lazy = false,
 	version = "*",
 	dependencies = {
 		{
@@ -25,6 +24,19 @@ return {
 		},
 		"nvim-lua/plenary.nvim",
 	},
+	init = function()
+		local group = vim.api.nvim_create_augroup("opencode-buffer-maps", { clear = true })
+		vim.api.nvim_create_autocmd("FileType", {
+			group = group,
+			pattern = "opencode",
+			callback = function(ev)
+				vim.keymap.set({ "n", "i" }, "<S-CR>", "<Esc>o", {
+					buffer = ev.buf,
+					desc = "Insert line below",
+				})
+			end,
+		})
+	end,
 	keys = {
 		{
 			"<leader>or",
