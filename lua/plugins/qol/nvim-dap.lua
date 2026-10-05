@@ -1,46 +1,3 @@
-local function open_debug_picker()
-    local dap = require("dap")
-    local dapui = require("dapui")
-    local pickers = require("telescope.pickers")
-    local finders = require("telescope.finders")
-    local conf = require("telescope.config").values
-    local actions = require("telescope.actions")
-    local action_state = require("telescope.actions.state")
-
-    local is_java = vim.bo.filetype == "java"
-    local options = is_java and { "Debug Main Application", "Debug Tests" } or { "Continue", "Restart", "Terminate" }
-    local picker_opts = {
-        prompt_title = "Debug Options",
-        finder = finders.new_table({
-            results = options,
-        }),
-        sorter = conf.generic_sorter({}),
-        attach_mappings = function(prompt_bufnr)
-            actions.select_default:replace(function()
-                local selection = action_state.get_selected_entry()
-                actions.close(prompt_bufnr)
-                if selection[1] == "Debug Tests" then
-                    local ok, jdtls_dap = pcall(require, "jdtls.dap")
-                    if ok then
-                        jdtls_dap.test_class()
-                    else
-                        vim.notify("jdtls.dap not available", vim.log.levels.WARN)
-                    end
-                elseif selection[1] == "Debug Main Application" or selection[1] == "Continue" then
-                    dap.continue()
-                elseif selection[1] == "Restart" then
-                    dap.restart()
-                elseif selection[1] == "Terminate" then
-                    dap.terminate()
-                    dapui.close()
-                end
-            end)
-            return true
-        end,
-    }
-    pickers.new(picker_opts, utils.picker_theme):find()
-end
-
 return {
     "mfussenegger/nvim-dap",
     dependencies = {
@@ -144,47 +101,21 @@ return {
             end,
             desc = "DAP close",
         },
-        { "<leader>bs", open_debug_picker, desc = "Debug session picker" },
+        {
+            "<leader>bs",
+            function()
+                require("config.telescope").debug_actions()
+            end,
+            desc = "Debug session picker",
+        },
     },
     cmd = { "DapContinue", "DapToggleBreakpoint" },
     config = function()
         require("lazydev").setup({
             library = { "nvim-dap-ui" },
         })
-        local dap = require("dap")
-        local dapui = require("dapui")
-        require("dapui").setup({
-            layouts = {
-                {
-                    elements = {
-                        { id = "scopes", size = 0.60 },
-                        { id = "watches", size = 0.20 },
-                        { id = "breakpoints", size = 0.20 },
-                    },
-                    size = 40,
-                    position = "left",
-                },
-                {
-                    elements = {
-                        { id = "console", size = 0.60 },
-                        { id = "repl", size = 0.40 },
-                    },
-                    size = 10,
-                    position = "bottom",
-                },
-            },
-        })
-        dap.listeners.after.event_initialized["dapui_config"] = function()
-            dapui.open()
-        end
-        dap.listeners.before.event_terminated["dapui_config"] = function()
-            dapui.close()
-        end
-        dap.listeners.before.event_exited["dapui_config"] = function()
-            dapui.close()
-        end
-        dap.listeners.before.disconnect["dapui_config"] = function()
-            dapui.close()
-        end
+        require("config.dap.ui").setup()
+        require("config.dap.python").setup()
+        require("config.dap.cpp").setup()
     end,
 }

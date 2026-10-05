@@ -9,10 +9,8 @@ local function map(mode, lhs, rhs, desc, extra_opts)
 end
 
 map("n", "z=", function()
-	require("utils.spell").popup()
+	require("config.telescope").spell_suggestions()
 end, "Spell suggestions")
-
-require("utils.vale").setup()
 
 local feed = function(keys)
     vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
@@ -31,20 +29,6 @@ map("n", "zw", function()
 	feed("<Esc>")
 end, "Mark word as wrong")
 
-vim.api.nvim_create_autocmd("BufEnter", {
-	pattern = "*",
-	callback = function()
-		vim.o.winborder = "single"
-	end,
-})
-
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "opencode",
-	callback = function()
-		map({ "n", "i" }, "<S-CR>", "<Esc>o", "Insert line below", { buffer = true })
-	end,
-})
-
 local function oil()
 	local cwd = vim.fn.getcwd()
 	cwd = cwd .. "/"
@@ -56,21 +40,6 @@ local function oil()
 end
 
 map("n", "<leader>d", oil, "Open Oil")
-
-map("n", "<leader>sf", function()
-	vim.o.winborder = "none"
-	require("telescope.builtin").find_files()
-end, "Find files")
-
-map("n", "<leader>sg", function()
-	vim.o.winborder = "none"
-	require("telescope.builtin").live_grep()
-end, "Live grep")
-
-map("n", "<leader>sd", function()
-	vim.o.winborder = "none"
-	require("telescope.builtin").diagnostics()
-end, "Search diagnostics")
 
 local diagnostics_enabled = true
 map("n", "<leader>tl", function()
@@ -103,17 +72,3 @@ map("x", "<A-j>", ":move '>+1<CR>gv-gv", "Move block down")
 map("x", "<A-k>", ":move '<-2<CR>gv-gv", "Move block up")
 
 map("v", "p", '"_dP', "Paste without yanking")
-
--- work for any upper/lower-case variant of cmds table
-local cmds = { "w", "q", "wq", "wqa", "wa" }
-for _, cmd in ipairs(cmds) do
-    local variants = { cmd:upper() }
-    for i = 1, #cmd do
-        local variant = cmd:sub(1, i):upper() .. cmd:sub(i + 1)
-        table.insert(variants, variant)
-    end
-
-    for _, v in ipairs(variants) do
-        vim.api.nvim_create_user_command(v, cmd, {})
-    end
-end
