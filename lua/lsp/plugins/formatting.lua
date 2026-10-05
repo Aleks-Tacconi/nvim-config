@@ -21,9 +21,25 @@ return {
 			prettier = {
 				prepend_args = { "--tab-width", "2", "--print-width", "100" },
 			},
-			prettier_markdown = {
-				command = "prettier",
-				prepend_args = { "--tab-width", "2", "--print-width", "300" },
+			prettier_markdown = function()
+				return vim.tbl_deep_extend("force", require("conform.formatters.prettier"), {
+					prepend_args = { "--tab-width", "2", "--print-width", "300" },
+					options = {
+						ft_parsers = {
+							markdown = "markdown",
+							quarto = "markdown",
+						},
+						ext_parsers = {
+							ipynb = "markdown",
+							md = "markdown",
+							qmd = "markdown",
+						},
+					},
+				})
+			end,
+			sqlfluff = {
+				command = "sqlfluff lint",
+				prepend_args = { "--dialect=postgress" },
 			},
 			swipl_fmt = {
 				command = "swipl",

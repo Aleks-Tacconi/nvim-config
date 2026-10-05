@@ -1,4 +1,6 @@
+vim.g.python3_host_prog = "/home/aleks/ai-nvim/.venv/bin/python"
 vim.g.have_nerd_font = true
+
 vim.o.number = true
 vim.o.laststatus = 3
 vim.o.relativenumber = true
@@ -34,6 +36,7 @@ vim.o.winborder = "single"
 vim.o.spell = false
 vim.o.spelllang = "en"
 vim.o.spellfile = vim.fn.expand("~/.config/nvim/spell/en.utf-8.add")
+vim.o.colorcolumn = "100"
 
 vim.schedule(function()
 	vim.o.clipboard = "unnamedplus"

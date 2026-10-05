@@ -12,22 +12,12 @@ map("n", "z=", function()
 	require("config.telescope").spell_suggestions()
 end, "Spell suggestions")
 
-local feed = function(keys)
-    vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes(keys, true, false, true), "",
-        false)
-end
-
-map("n", "zg", function()
-	require("utils.vale").learn("zg")
-	feed("a")
-	feed("<Esc>")
-end, "Add word to dictionary")
-
-map("n", "zw", function()
-	require("utils.vale").learn("zw")
-	feed("a")
-	feed("<Esc>")
-end, "Mark word as wrong")
+vim.api.nvim_create_autocmd("BufEnter", {
+	pattern = "*",
+	callback = function()
+		vim.o.winborder = "single"
+	end,
+})
 
 local function oil()
 	local cwd = vim.fn.getcwd()
@@ -51,6 +41,13 @@ map("n", "<leader>tl", function()
 	end
 end, "Toggle diagnostics")
 
+map("n", "<leader>p", function()
+	vim.diagnostic.open_float({
+		border = "rounded",
+		source = "if_many",
+	})
+end, "Line diagnostics")
+
 map("i", "<C-H>", "<C-W>", "Delete previous word")
 map("i", "<C><BS>", "<C-W>", "Delete previous word")
 map("c", "<C-H>", "<C-W>", "Delete previous word")
@@ -72,3 +69,19 @@ map("x", "<A-j>", ":move '>+1<CR>gv-gv", "Move block down")
 map("x", "<A-k>", ":move '<-2<CR>gv-gv", "Move block up")
 
 map("v", "p", '"_dP', "Paste without yanking")
+map("n", "<C-l>", ":cnext<CR>", "Next quickfix item")
+map("n", "<C-h>", ":cprev<CR>", "Previous quickfix item")
+
+-- work for any upper/lower-case variant of cmds table
+local cmds = { "w", "q", "wq", "wqa", "wa" }
+for _, cmd in ipairs(cmds) do
+    local variants = { cmd:upper() }
+    for i = 1, #cmd do
+        local variant = cmd:sub(1, i):upper() .. cmd:sub(i + 1)
+        table.insert(variants, variant)
+    end
+
+    for _, v in ipairs(variants) do
+        vim.api.nvim_create_user_command(v, cmd, {})
+    end
+end

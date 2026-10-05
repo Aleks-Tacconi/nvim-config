@@ -37,17 +37,17 @@ end
 require("jdtls.dap").setup_dap({ hotcodereplace = "auto" })
 
 -- Auto-load coverage signs when entering a Java buffer, without running Maven
-vim.api.nvim_create_autocmd("BufEnter", {
-	pattern = "*.java",
-	callback = function()
-		local coverage = require("utils.java-code-coverage")
-		local root = coverage.find_project_root()
-		if root and vim.fn.filereadable(root .. "/target/site/jacoco/jacoco.xml") == 1 then
-			coverage.parse_jacoco()
-			coverage.show_signs()
-		end
-	end,
-})
+-- vim.api.nvim_create_autocmd("BufEnter", {
+-- 	pattern = "*.java",
+-- 	callback = function()
+-- 		local coverage = require("utils.java-code-coverage")
+-- 		local root = coverage.find_project_root()
+-- 		if root and vim.fn.filereadable(root .. "/target/site/jacoco/jacoco.xml") == 1 then
+-- 			coverage.parse_jacoco()
+-- 			coverage.show_signs()
+-- 		end
+-- 	end,
+-- })
 
 -- Keymap to regenerate coverage with Maven
 vim.keymap.set("n", "<leader>jc", function()

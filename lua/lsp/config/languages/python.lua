@@ -8,6 +8,9 @@ cfg:add_server("pyright", {
 			analysis = {
 				autoSearchPaths = true,
 				diagnosticMode = "workspace",
+				diagnosticSeverityOverrides = {
+					reportUnusedExpression = "none",
+				},
 				useLibraryCodeForTypes = true,
 			},
 		},
