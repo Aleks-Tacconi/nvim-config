@@ -21,7 +21,7 @@ return {
 	opts = {
 		anti_conceal = { enabled = true },
 		render_modes = { "n", "c", "t", "i" },
-		file_types = { "markdown", "Avante", "copilot-chat", "opencode_output" },
+		file_types = { "markdown", "Avante", "copilot-chat" },
 		code = {
 			disable_background = false,
 			border = "thin",
@@ -45,5 +45,5 @@ return {
 		require("render-markdown").setup(opts)
 		set_notebook_highlights()
 	end,
-	ft = { "markdown", "Avante", "copilot-chat", "opencode_output" },
+	ft = { "markdown", "Avante", "copilot-chat" },
 }

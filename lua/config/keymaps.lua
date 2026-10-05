@@ -19,13 +19,6 @@ vim.api.nvim_create_autocmd("BufEnter", {
 	end,
 })
 
-vim.api.nvim_create_autocmd("FileType", {
-	pattern = "opencode",
-	callback = function()
-		map({ "n", "i" }, "<S-CR>", "<Esc>o", "Insert line below", { buffer = true })
-	end,
-})
-
 local function oil()
 	local cwd = vim.fn.getcwd()
 	cwd = cwd .. "/"
@@ -62,6 +55,13 @@ map("n", "<leader>tl", function()
 		vim.diagnostic.enable(false)
 	end
 end, "Toggle diagnostics")
+
+map("n", "<leader>p", function()
+	vim.diagnostic.open_float({
+		border = "rounded",
+		source = "if_many",
+	})
+end, "Line diagnostics")
 
 map("i", "<C-H>", "<C-W>", "Delete previous word")
 map("i", "<C><BS>", "<C-W>", "Delete previous word")

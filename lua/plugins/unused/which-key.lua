@@ -29,7 +29,6 @@ return {
 		spec = {
 			{ "<leader>b", group = "debug" },
 			{ "<leader>g", group = "git" },
-			{ "<leader>o", group = "opencode" },
 			{ "<leader>s", group = "search" },
 			{ "<leader>t", group = "toggle/trouble" },
 			{ "<leader>w", group = "watch" },
