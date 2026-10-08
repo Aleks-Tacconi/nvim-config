@@ -53,15 +53,100 @@ local function patch_screenpos()
   end
 end
 
+local loaded_molten_images = {}
+
+---Patches Molten's image_api to keep images rendered in the persistent right pane
+---even when the cursor moves out of the code block.
+local function patch_molten_image_api()
+  local ok, load_image = pcall(require, "load_image_nvim")
+  if not ok or not load_image.image_api then return end
+  local api = load_image.image_api
+  if api._patched_right_pane then return end
+  api._patched_right_pane = true
+
+  local function get_right_pane_win()
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      local r_ok, is_right = pcall(vim.api.nvim_win_get_var, win, "is_molten_right_pane")
+      if r_ok and is_right and vim.api.nvim_win_is_valid(win) then
+        return win
+      end
+    end
+    return nil
+  end
+
+  local orig_from_file = api.from_file
+  api.from_file = function(path, opts)
+    opts = opts or {}
+    local right_win = get_right_pane_win()
+    if right_win then
+      opts.window = right_win
+    end
+    local res = orig_from_file(path, opts)
+    loaded_molten_images[path] = {
+      buffer = opts.buffer,
+      window = right_win,
+    }
+    return res
+  end
+
+  local orig_render = api.render
+  api.render = function(identifier, geometry)
+    local right_win = get_right_pane_win()
+    local ok_img, image_mod = pcall(require, "image")
+    if ok_img and image_mod.get_images then
+      for _, img in ipairs(image_mod.get_images()) do
+        if (img.path == identifier or img.id == identifier) and right_win then
+          img.window = right_win
+        end
+      end
+    end
+
+    orig_render(identifier, geometry)
+
+    if ok_img and image_mod.get_images then
+      for _, img in ipairs(image_mod.get_images()) do
+        if (img.path == identifier or img.id == identifier) and right_win then
+          img.window = right_win
+        end
+      end
+    end
+  end
+
+  local orig_clear = api.clear
+  api.clear = function(identifier)
+    local right_win = get_right_pane_win()
+    if right_win and vim.api.nvim_win_is_valid(right_win) then
+      local right_buf = vim.api.nvim_win_get_buf(right_win)
+      local entry = loaded_molten_images[identifier]
+      if entry and entry.buffer == right_buf then
+        -- Output buffer is still displayed in the right pane; keep image rendered.
+        return
+      end
+
+      local ok_img, image_mod = pcall(require, "image")
+      if ok_img and image_mod.get_images then
+        for _, img in ipairs(image_mod.get_images()) do
+          if (img.path == identifier or img.id == identifier) and img.buffer == right_buf then
+            return
+          end
+        end
+      end
+    end
+
+    orig_clear(identifier)
+  end
+end
+
 ---Initializes Molten plugin variables before it loads
 function M.init()
   patch_screenpos()
+  patch_molten_image_api()
   M.set_output_window_size()
   vim.api.nvim_create_autocmd("VimResized", { callback = M.set_output_window_size })
 
   vim.g.molten_auto_open_output = true -- Auto-selects cells and updates output in the right pane
   vim.g.molten_image_provider = "image.nvim"
-  vim.g.molten_image_location = "float" -- ONLY render images in the right pane (float), not inline
+  vim.g.molten_image_location = "float" -- Render images only in the right pane, not inline
   vim.g.molten_output_show_more = false
   vim.g.molten_output_show_exec_time = true
   vim.g.molten_output_win_border = "none" -- Remove border entirely to prevent artifacts
@@ -90,27 +175,144 @@ local function hide_molten_floats(buf)
   end
 end
 
+local cell_margin_ns = vim.api.nvim_create_namespace("notebook_active_cell_margin")
+
+---Finds the fenced code block enclosing the cursor, or falls back to the first cell if none is active yet.
+---@param buf integer
+---@return integer? start_row, integer? end_row
+local function get_active_cell_range(buf)
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local row, col = cursor[1] - 1, cursor[2]
+  local ok, node = pcall(vim.treesitter.get_node, { bufnr = buf, pos = { row, col } })
+  if ok and node then
+    local curr = node
+    while curr do
+      if curr:type() == "fenced_code_block" then
+        local s, _, e, _ = curr:range()
+        return s, e
+      end
+      curr = curr:parent()
+    end
+  end
+
+  -- Fall back to first code cell if the buffer has no selection yet
+  if not vim.b[buf].active_cell_range then
+    local p_ok, parser = pcall(vim.treesitter.get_parser, buf, "markdown")
+    if p_ok and parser then
+      local tree = parser:parse()[1]
+      local query = vim.treesitter.query.parse("markdown", "((fenced_code_block) @cell)")
+      for _, c_node in query:iter_captures(tree:root(), buf) do
+        local s, _, e, _ = c_node:range()
+        return s, e
+      end
+    end
+  end
+
+  return nil, nil
+end
+
+local empty_output_buf = nil
+
+---Returns or creates a reusable empty scratch buffer for the right pane.
+---@return integer
+local function get_empty_output_buf()
+  if not empty_output_buf or not vim.api.nvim_buf_is_valid(empty_output_buf) then
+    empty_output_buf = vim.api.nvim_create_buf(false, true)
+    vim.bo[empty_output_buf].buftype = "nofile"
+    vim.bo[empty_output_buf].bufhidden = "hide"
+    vim.bo[empty_output_buf].swapfile = false
+    vim.api.nvim_buf_set_lines(empty_output_buf, 0, -1, false, {})
+  end
+  return empty_output_buf
+end
+
+---Clears the right pane to show an empty buffer if open.
+function M.clear_right_pane()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    local ok, is_right = pcall(vim.api.nvim_win_get_var, win, "is_molten_right_pane")
+    if ok and is_right then
+      local empty_buf = get_empty_output_buf()
+      if vim.api.nvim_win_get_buf(win) ~= empty_buf then
+        vim.api.nvim_win_set_buf(win, empty_buf)
+      end
+      pcall(function()
+        local ok_img, image_mod = pcall(require, "image")
+        if ok_img and image_mod.get_images then
+          for _, img in ipairs(image_mod.get_images()) do
+            if img.window == win then
+              img:clear()
+            end
+          end
+        end
+      end)
+      return
+    end
+  end
+end
+
+---Returns true if the cell range has an associated molten output extmark.
+---@param buf integer
+---@param start_row integer
+---@param end_row integer
+---@return boolean
+local function cell_has_molten_output(buf, start_row, end_row)
+  local ns = vim.api.nvim_get_namespaces()["molten-extmarks"]
+  if not ns then return false end
+  local marks = vim.api.nvim_buf_get_extmarks(buf, ns, { start_row, 0 }, { end_row, 0 }, { details = true })
+  return #marks > 0
+end
+
+---Updates the active code cell margin highlight in the sign column.
+---@param buf integer
+local function update_active_cell_margin(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then return end
+
+  local start_row, end_row = get_active_cell_range(buf)
+  if not (start_row and end_row) then
+    return
+  end
+
+  local cur_range = vim.b[buf].active_cell_range
+  if cur_range and cur_range[1] == start_row and cur_range[2] == end_row then
+    return
+  end
+
+  vim.api.nvim_buf_clear_namespace(buf, cell_margin_ns, 0, -1)
+  vim.b[buf].active_cell_range = { start_row, end_row }
+  for r = start_row, end_row - 1 do
+    vim.api.nvim_buf_set_extmark(buf, cell_margin_ns, r, 0, {
+      sign_text = "▎",
+      sign_hl_group = "NotebookActiveCellMargin",
+      priority = 20,
+    })
+  end
+
+  if cell_has_molten_output(buf, start_row, end_row) then
+    pcall(vim.cmd, "MoltenShowOutput")
+  else
+    M.clear_right_pane()
+  end
+end
+
 ---Sets up autocmds and user commands after Molten loads
 function M.setup()
   local group = vim.api.nvim_create_augroup("notebook_setup", { clear = true })
+  vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#89b4fa", default = true })
 
-  -- Sync newly created Molten buffers to the right pane IMMEDIATELY.
-  vim.api.nvim_create_autocmd("FileType", {
-    group = group,
-    pattern = "molten_output",
-    callback = function(event)
-      M.set_output_keymaps(event.buf)
-      M.open_in_right_pane(event.buf)
-      hide_molten_floats(event.buf)
-    end,
-  })
+  patch_molten_image_api()
 
-  -- Ensure any floating output window opened by Molten is hidden so output stays only in the right pane
-  vim.api.nvim_create_autocmd("BufWinEnter", {
+  if vim.fn.exists("*MoltenUpdateOption") == 1 then
+    pcall(vim.fn.MoltenUpdateOption, "image_location", "float")
+  end
+
+  -- Sync newly created or reopened Molten buffers to the right pane IMMEDIATELY.
+  vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
     group = group,
     pattern = "*",
     callback = function(event)
       if vim.bo[event.buf].filetype == "molten_output" then
+        M.set_output_keymaps(event.buf)
+        M.open_in_right_pane(event.buf)
         hide_molten_floats(event.buf)
       end
     end,
@@ -128,6 +330,14 @@ function M.setup()
         if ok then
           otter.activate({ "python" }, true, true, nil)
         end
+        vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
+          group = group,
+          buffer = event.buf,
+          callback = function()
+            update_active_cell_margin(event.buf)
+          end,
+        })
+        update_active_cell_margin(event.buf)
       end
     end,
   })
@@ -319,7 +529,14 @@ function M.set_buffer_keymaps(buf)
     { "n", "<localleader>ra", run("run_above"), "run above" },
     { "n", "<localleader>rA", run("run_all"), "run all" },
     { "v", "<localleader>r", run("run_range"), "run range" },
-    { "n", "<localleader>mi", "<cmd>MoltenInit<CR>", "initialize molten kernel" },
+    { "n", "<localleader>mi", function()
+      local ml_kernel = vim.fn.expand("~/.local/share/jupyter/kernels/machine-learning")
+      if vim.fn.isdirectory(ml_kernel) == 1 then
+        vim.cmd("MoltenInit machine-learning")
+      else
+        vim.cmd("MoltenInit")
+      end
+    end, "initialize molten kernel" },
     { "n", "<localleader>os", M.enter_output, "enter output window" },
     { "n", "<localleader>oh", M.hide_output, "hide output" },
     { "n", "<localleader>ox", "<cmd>MoltenExportOutput!<CR>", "export output to notebook" },

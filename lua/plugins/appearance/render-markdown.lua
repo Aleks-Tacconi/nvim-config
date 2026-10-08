@@ -5,6 +5,7 @@ local function set_notebook_highlights()
 	vim.api.nvim_set_hl(0, "NotebookCellLanguage", { fg = "#a6adc8", bg = "none" })
 	vim.api.nvim_set_hl(0, "RenderMarkdownCode", { bg = "#17191f" })
 	vim.api.nvim_set_hl(0, "RenderMarkdownCodeInline", { bg = "#161616" })
+	vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#89b4fa" })
 end
 
 return {

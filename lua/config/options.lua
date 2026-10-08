@@ -1,4 +1,3 @@
-vim.g.python3_host_prog = "/home/aleks/ai-nvim/.venv/bin/python"
 vim.g.have_nerd_font = true
 
 vim.o.number = true
