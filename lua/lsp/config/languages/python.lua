@@ -7,7 +7,7 @@ cfg:add_server("pyright", {
 			pythonPath = utils.get_path("python"),
 			analysis = {
 				autoSearchPaths = true,
-				diagnosticMode = "workspace",
+				diagnosticMode = "openFilesOnly",
 				diagnosticSeverityOverrides = {
 					reportUnusedExpression = "none",
 				},
