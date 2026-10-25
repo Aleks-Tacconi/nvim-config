@@ -19,7 +19,6 @@ do
 	ft_to_files["jsonc"]           = { ft_to_files["json"][1] }
 	ft_to_files["htmldjango"]      = { ft_to_files["html"][1] }
 	ft_to_files["cpp"]             = { ft_to_files["c"][1] }
-	ft_to_files["rust"]            = { ft_to_files["c"][1] }
 	ft_to_files["markdown"]        = { ft_to_files["markdown"][1], ft_to_files["python"][1] }
 	ft_to_files["quarto"]          = { ft_to_files["markdown"][1], ft_to_files["python"][1] }
 end

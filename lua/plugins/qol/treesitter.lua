@@ -9,7 +9,7 @@ return {
 	end,
 
 	opts = {
-		ensure_installed = { "markdown", "markdown_inline", "html", "latex", "typst", "yaml" },
+		ensure_installed = { "markdown", "markdown_inline", "html", "latex", "typst", "yaml", "rust", "ron" },
 		auto_install = true,
 		highlight = { enable = true },
 		indent = { enable = true, disable = { "tsx", "typescript" } },
