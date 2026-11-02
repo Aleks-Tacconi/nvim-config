@@ -67,18 +67,21 @@ return {
 		picker = {
 			prompt = " ",
             frecency = true,
-			layout = {
-				preset = "ivy",
-				layout = {
-					width = 0,
-					height = 0,
-					row = 0,
-					border = { "", "", "", "", "", "", "", " " },
+			layout = { preset = "fullscreen" },
+			layouts = {
+				fullscreen = {
+					preset = "ivy",
+					layout = {
+						width = 0,
+						height = 0,
+						row = 0,
+						border = { "", "", "", "", "", "", "", " " },
+					},
+					---Remove the filename title from the side-by-side preview.
+					config = function(layout)
+						layout.layout[2][2].title = ""
+					end,
 				},
-				---Remove the filename title from the side-by-side preview.
-				config = function(layout)
-					layout.layout[2][2].title = ""
-				end,
 			},
 			sources = {
 				files = { config = git_file_status },
