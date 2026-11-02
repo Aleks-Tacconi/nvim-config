@@ -15,6 +15,7 @@ return {
     "3rd/image.nvim",
     opts = {
       backend = "kitty",
+      tmux_show_only_in_active_window = true,
       max_width = 100,
       max_height = 25,
       max_height_window_percentage = math.huge,

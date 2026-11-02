@@ -2,9 +2,9 @@
 
 A personal and opinionated Neovim config. Features include:
 
-- LSP, diagnostics, completion, GitHub Copilot suggestions, and snippets
+- LSP, diagnostics, completion, and native snippets
 - File, buffer, and project navigation
-- Git, testing, and debugging tools
+- Git and testing tools
 - Markdown and MDX support with general editing quality-of-life
 
 ## Screenshot
@@ -15,15 +15,18 @@ A personal and opinionated Neovim config. Features include:
 
 Core tooling:
 
-- Neovim (`0.12+` recommended)
+- Neovim `0.12+`
 - `git`
 - `ripgrep`
 - `fd`
+- `tree-sitter` CLI `0.26.1+`, a C compiler, `curl`, and `tar` for Treesitter parsers
 
 Optional but useful:
 
 - `lazygit`
-- language-specific LSPs, formatters, and debuggers (See my [NixOS config](https://github.com/Aleks-Tacconi/NixOSConfig) for more details)
+- language-specific LSPs and formatters (See my [NixOS config](https://github.com/Aleks-Tacconi/NixOSConfig) for more details)
+- `jdtls` and Java for Java language support
+- Jupytext, Jupyter, a Python provider, and ImageMagick on PATH for notebooks and images
 - for QML projects, expose your Qt/QML modules through `QML_IMPORT_PATH` or `QML2_IMPORT_PATH` so `qmlls` can resolve imports
 
 ## Setup
@@ -43,18 +46,18 @@ Optional but useful:
 3. Sync plugins and Treesitter parsers:
 
     ```sh
-    nvim --headless "+Lazy! sync" "+lua require('lazy').load({plugins={'nvim-treesitter'}})" "+TSUpdate" "+qa"
+    nvim --headless "+Lazy! sync" "+lua require('nvim-treesitter').install(require('config.treesitter').parsers):wait(300000)" "+qa"
     ```
 
 4. Open Neovim and let Lazy finish any first-run setup.
 
 ## Structure
 
-- `lua/config/` for globals, options, keymaps, commands, filetypes, and autocmds
-- `lua/config/dap/` for debug UI and adapter setup
+- `lua/config/` for globals, options, keymaps, filetypes, and autocmds
+- `lua/config/treesitter.lua` for parser installation and native highlighting
 - `lua/config/telescope.lua` for Telescope setup and custom pickers
 - `lua/plugins/navigation/` for search and movement plugins
-- `lua/plugins/qol/` for editing, git, markdown, testing, and debugging
+- `lua/plugins/qol/` for editing, git, markdown, and testing
 - `lua/plugins/appearance/` for UI and theme-related plugins
 - `lua/lsp/plugins/` for language tooling
 
@@ -62,8 +65,21 @@ Optional but useful:
 
 - General keymaps: `lua/config/keymaps.lua`
 - Core autocmds: `lua/config/autocmds.lua`
-- Command aliases: `lua/config/commands.lua`
-- Kanagawa theme setup: `lua/plugins/appearance/kanagawa.lua`
+- Rose Pine theme setup: `lua/plugins/appearance/colorscheme.lua`
 - Telescope setup and pickers: `lua/config/telescope.lua`
 - LSP keymaps: `lua/lsp/config/keymaps.lua`
 - Main plugin loading: `init.lua`
+
+## Editing defaults
+
+- `Ctrl-H` and `Ctrl-L` select the previous and next quickfix entries.
+- `Ctrl-Backspace` deletes the previous word in Insert and Command-line modes.
+- Use native `Ctrl-W` commands to move between windows.
+- Swap files and write backups are disabled; persistent undo is enabled.
+- Plugins are managed with lazy.nvim; Treesitter uses its current `main` API.
+
+## Verification
+
+After installing plugins and parsers, run `nvim --clean -i NONE -n --headless -l tests/config.lua`.
+The checks cover quickfix mappings, notebook file preservation, language registration,
+project executable resolution, SQL diagnostics, and Treesitter cell navigation.

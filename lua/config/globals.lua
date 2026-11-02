@@ -1,3 +1,4 @@
+---Configure leaders and external language providers.
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 vim.g.loaded_netrw = 1
@@ -9,6 +10,7 @@ if vim.env.NVIM_PYTHON_PROVIDER then
 	vim.env.PATH = vim.fn.fnamemodify(vim.env.NVIM_PYTHON_PROVIDER, ":h") .. ":" .. vim.env.PATH
 end
 
+-- ImageMagick is not exposed by the current Nix profile yet.
 if vim.fn.executable("magick") ~= 1 then
 	local magick_bin = "/nix/store/s13s3r3pi67vj27s6ca7pbrxs2z4zjf6-imagemagick-7.1.2-31/bin"
 	if vim.fn.isdirectory(magick_bin) == 1 then

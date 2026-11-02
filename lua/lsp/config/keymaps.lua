@@ -10,7 +10,7 @@ end
 function M.on_attach(_, bufnr)
     local telescope = require("config.telescope")
 
-    vim.keymap.set("n", "gd", telescope.lsp_definitions, { buffer = bufnr, desc = "Go to definition" })
+    vim.keymap.set("n", "gd", vim.lsp.buf.definition, { buffer = bufnr, desc = "Go to definition" })
     vim.keymap.set("n", "gr", telescope.lsp_references, { buffer = bufnr, desc = "Find references" })
     vim.keymap.set("n", "K", vim.lsp.buf.hover, { buffer = bufnr, desc = "Hover docs" })
     vim.keymap.set("n", "gi", telescope.lsp_implementations, { buffer = bufnr, desc = "Go to implementation" })

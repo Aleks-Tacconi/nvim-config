@@ -1,5 +1,7 @@
+---Bootstrap plugins and load the editor configuration.
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not (vim.uv or vim.loop).fs_stat(lazypath) then
+
+if not vim.uv.fs_stat(lazypath) then
 	vim.fn.system({
 		"git",
 		"clone",
@@ -8,15 +10,16 @@ if not (vim.uv or vim.loop).fs_stat(lazypath) then
 		"https://github.com/folke/lazy.nvim.git",
 		lazypath,
 	})
+	if vim.v.shell_error ~= 0 then
+		error("Failed to clone lazy.nvim into " .. lazypath)
+	end
 end
 vim.opt.rtp:prepend(lazypath)
 
 require("config/globals")
-require("config/compat")
 require("config/options")
 require("config/filetypes")
 require("config/autocmds")
-require("config/commands")
 require("lazy").setup({
 	{ import = "lsp/plugins" },
 	{ import = "plugins/qol" },

@@ -2,7 +2,7 @@ return {
     "saghen/blink.cmp",
 
     dependencies = {
-        "onsails/lspkind.nvim",
+        "rafamadriz/friendly-snippets",
     },
 
     version = "1.*",
@@ -14,7 +14,15 @@ return {
             ["<C-k>"] = { "select_prev", "fallback" },
             ["<C-y>"] = { "accept", "fallback" },
         },
+        sources = {
+            default = { "lsp", "path", "snippets", "buffer" },
+        },
         completion = {
+            trigger = {
+                show_on_insert = true,
+                show_on_backspace = true,
+                show_on_blocked_trigger_characters = {},
+            },
             documentation = {
                 auto_show = false,
                 auto_show_delay_ms = 0,
@@ -22,13 +30,14 @@ return {
                     border = "single",
                 },
             },
-            ghost_text = { enabled = true },
+            ghost_text = { enabled = true, show_without_selection = true },
             menu = {
                 border = "single",
                 draw = {
                     columns = {
                         { "kind_icon", "kind", gap = 1 },
                         { "label", "label_description", gap = 3 },
+                        { "source_name" },
                     },
                     components = {
                         label = {
