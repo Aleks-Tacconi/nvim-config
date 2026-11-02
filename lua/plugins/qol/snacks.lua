@@ -1,9 +1,16 @@
----Provide pickers, dialogs, and notifications.
+---Provide pickers, dialogs, notifications, and LazyGit.
 return {
 	"folke/snacks.nvim",
 	lazy = false,
 	priority = 1000,
 	keys = {
+		{
+			"<leader>lg",
+			function()
+				require("snacks").lazygit()
+			end,
+			desc = "Open LazyGit",
+		},
 		{
 			"<leader>sf",
 			function()
@@ -28,6 +35,9 @@ return {
 	},
 	opts = {
 		input = {},
+		lazygit = {
+			win = { width = 0, height = 0, border = "none" },
+		},
 		notifier = { enabled = true },
 		picker = {
 			prompt = " ",
@@ -35,9 +45,10 @@ return {
 			layout = {
 				preset = "ivy",
 				layout = {
-					width = 0.8,
-					height = 0.9,
-					border = { "┌", "─", "┐", "│", "", "", "", "│" },
+					width = 0,
+					height = 0,
+					row = 0,
+					border = { "", "", "", "", "", "", "", " " },
 				},
 				---Remove the filename title from the side-by-side preview.
 				config = function(layout)
