@@ -4,7 +4,7 @@ return {
 	priority = 10000,
 	config = function()
 		require("rose-pine").setup({
-			disable_background = true,
+			styles = { transparency = true },
 		})
 		vim.cmd("colorscheme rose-pine-moon")
 
@@ -38,6 +38,7 @@ return {
 		vim.api.nvim_set_hl(0, "BlinkCmpMenu", { bg = "none" })
 		vim.api.nvim_set_hl(0, "BlinkCmpMenuBorder", { bg = "none", fg = "grey" })
 		vim.api.nvim_set_hl(0, "BlinkCmpMenuCursorLine", { bg = "none" })
+		vim.api.nvim_set_hl(0, "BlinkCmpGhostText", { fg = "#b0b0b0", italic = true })
 		vim.api.nvim_set_hl(0, "BlinkCmpSignatureHelp", { bg = "none" })
 		vim.api.nvim_set_hl(0, "BlinkCmpSignatureHelpBorder", { bg = "none", fg = "grey" })
 

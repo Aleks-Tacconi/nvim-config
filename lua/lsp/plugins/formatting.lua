@@ -37,10 +37,6 @@ return {
 					},
 				})
 			end,
-			sqlfluff = {
-				command = "sqlfluff lint",
-				prepend_args = { "--dialect=postgress" },
-			},
 			swipl_fmt = {
 				command = "swipl",
 				stdin = false,

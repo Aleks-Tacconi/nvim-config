@@ -47,6 +47,12 @@ end
 
 cfg:add_server("qmlls", vim.tbl_extend("force", qmlls_config(), {
 	root_markers = qml_root_markers,
+	root_dir = function(bufnr, on_dir)
+		local path = vim.fs.normalize(vim.api.nvim_buf_get_name(bufnr))
+		if path ~= learning_root and not vim.startswith(path, learning_root .. "/") then
+			on_dir(vim.fs.root(bufnr, qml_root_markers))
+		end
+	end,
 }))
 
 cfg:add_server("qmlls_learning", vim.tbl_extend("force", qmlls_config(quickshell_qml_path()), {

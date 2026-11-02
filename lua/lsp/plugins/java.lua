@@ -1,7 +1,5 @@
+---Provide Java language-server extensions without debugger integration.
 return {
-	dependencies = {
-		"nvim-dap",
-	},
 	"mfussenegger/nvim-jdtls",
 	ft = "java",
 }

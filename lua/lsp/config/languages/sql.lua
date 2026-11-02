@@ -1,14 +1,8 @@
+---Configure PostgreSQL tooling using the built-in SQLFluff parser.
 local cfg = require("utils.lsp").lang_server()
 local lint = require("lint")
 
-lint.linters.sqlfluff = {
-	name = "sqlfluff",
-	cmd = "sqlfluff",
-	args = { "lint", "--dialect", "postgres", "--ignore-parse-errors", "%file" },
-	stdin = false,
-	stream = "stdout",
-	parser = require("lint.parser").from_pattern("(%d+):(%d+): %w+ (.+)", { "lnum", "col", "message" }),
-}
+lint.linters.sqlfluff.args = { "lint", "--format=json", "--dialect", "postgres", "-" }
 
 cfg:add_server("postgres_lsp", {})
 cfg:set_formatters({ "sql" }, { "pg_format" })

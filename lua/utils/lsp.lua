@@ -1,37 +1,50 @@
+---Configure language tools and resolve executables relative to their project.
 local M = {}
 
--- Cache poetry venv path per working directory to avoid repeated shell calls.
+-- Cache Poetry environments per project to avoid repeated shell calls.
 local _poetry_cache = {}
 
-local function poetry_bin_dir()
-	local cwd = vim.fn.getcwd()
-	if _poetry_cache[cwd] == nil then
-		local out = vim.fn.trim(vim.fn.system("poetry env info -p 2>/dev/null"))
-		-- Store empty string on failure so we don't retry every call.
-		_poetry_cache[cwd] = (vim.v.shell_error == 0 and out ~= "") and (out .. "/bin/") or ""
+---Find a Poetry environment once per project, when Poetry is available.
+local function poetry_bin_dir(root)
+	if _poetry_cache[root] == nil then
+		_poetry_cache[root] = ""
+		if vim.fn.executable("poetry") == 1 and vim.fn.filereadable(root .. "/pyproject.toml") == 1 then
+			local result = vim.system({ "poetry", "env", "info", "-p" }, { cwd = root, text = true }):wait()
+			local path = vim.trim(result.stdout)
+			if result.code == 0 and path ~= "" then
+				_poetry_cache[root] = path .. "/bin/"
+			end
+		end
 	end
-	return _poetry_cache[cwd]
+	return _poetry_cache[root]
 end
 
-function M.get_path(executable)
+---Resolve a project executable, falling back to PATH or its command name.
+function M.get_path(executable, path)
+	path = path or vim.api.nvim_buf_get_name(0)
+	local start = path ~= "" and path or vim.fn.getcwd()
+	local root = vim.fs.root(start, { { "pyproject.toml", ".git", ".venv", "venv", "requirements.txt", "setup.py" } })
+	root = root or (vim.fn.isdirectory(start) == 1 and start or vim.fs.dirname(start))
 	local base_paths = {
-		poetry_bin_dir(),
-		vim.fn.getcwd() .. "/venv/bin/",
-		vim.fn.getcwd() .. "/.venv/bin/",
+		poetry_bin_dir(root),
+		root .. "/venv/bin/",
+		root .. "/.venv/bin/",
 	}
 
 	for _, base in ipairs(base_paths) do
 		if base ~= "" then
 			local full_path = base .. executable
-			if vim.fn.filereadable(full_path) == 1 then
+			if vim.fn.executable(full_path) == 1 then
 				return full_path
 			end
 		end
 	end
 
-	return vim.fn.trim(vim.fn.system("which " .. executable))
+	local resolved = vim.fn.exepath(executable)
+	return resolved ~= "" and resolved or executable
 end
 
+---Build the server, formatter, linter, and indentation settings for a language.
 function M.lang_server()
 	local obj = {
 		servers = {},
@@ -40,10 +53,12 @@ function M.lang_server()
 		linters_ft = {},
 	}
 
+	---Register a language server and its overrides.
 	function obj:add_server(name, config)
 		self.servers[name] = config
 	end
 
+	---Assign linters to the given filetypes.
 	function obj:set_linters(ft, linters_list)
 		local lint = require("lint")
 		for _, filetype in ipairs(ft) do
@@ -54,6 +69,7 @@ function M.lang_server()
 		vim.list_extend(self.linters, linters_list)
 	end
 
+	---Assign formatters to the given filetypes.
 	function obj:set_formatters(ft, formatters_list)
 		local conform = require("conform")
 		for _, filetype in ipairs(ft) do
@@ -63,7 +79,9 @@ function M.lang_server()
 		vim.list_extend(self.formatters, formatters_list)
 	end
 
-	function obj:set_indent(ft, indent)
+	---Apply language indentation to current and future buffers.
+	function obj.set_indent(_, ft, indent)
+		---Set the indentation width in one buffer.
 		local function apply(buf)
 			vim.bo[buf].tabstop = indent
 			vim.bo[buf].shiftwidth = indent
@@ -84,6 +102,7 @@ function M.lang_server()
 		end
 	end
 
+	---Return the settings consumed by the language loader.
 	function obj:get()
 		return {
 			servers = self.servers,

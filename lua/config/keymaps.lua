@@ -1,6 +1,8 @@
+---Register editor and quickfix shortcuts.
+
+---Map a shortcut with a description and shared options.
 local function map(mode, lhs, rhs, desc, extra_opts)
 	local opts = vim.tbl_extend("force", {
-		noremap = true,
 		silent = true,
 		desc = desc,
 	}, extra_opts or {})
@@ -12,13 +14,7 @@ map("n", "z=", function()
 	require("config.telescope").spell_suggestions()
 end, "Spell suggestions")
 
-vim.api.nvim_create_autocmd("BufEnter", {
-	pattern = "*",
-	callback = function()
-		vim.o.winborder = "single"
-	end,
-})
-
+---Open Oil unless its current buffer already represents the working directory.
 local function oil()
 	local cwd = vim.fn.getcwd()
 	cwd = cwd .. "/"
@@ -49,14 +45,9 @@ map("n", "<leader>p", function()
 end, "Line diagnostics")
 
 map("i", "<C-H>", "<C-W>", "Delete previous word")
-map("i", "<C><BS>", "<C-W>", "Delete previous word")
+map("i", "<C-BS>", "<C-W>", "Delete previous word")
 map("c", "<C-H>", "<C-W>", "Delete previous word")
-map("c", "<C><BS>", "<C-W>", "Delete previous word")
-
-map("n", "<C-h>", "<C-w>h", "Move to left window")
-map("n", "<C-j>", "<C-w>j", "Move to lower window")
-map("n", "<C-k>", "<C-w>k", "Move to upper window")
-map("n", "<C-l>", "<C-w>l", "Move to right window")
+map("c", "<C-BS>", "<C-W>", "Delete previous word")
 
 map("v", "<", "<gv", "Indent left and keep selection")
 map("v", ">", ">gv", "Indent right and keep selection")
@@ -71,17 +62,3 @@ map("x", "<A-k>", ":move '<-2<CR>gv-gv", "Move block up")
 map("v", "p", '"_dP', "Paste without yanking")
 map("n", "<C-l>", ":cnext<CR>", "Next quickfix item")
 map("n", "<C-h>", ":cprev<CR>", "Previous quickfix item")
-
--- work for any upper/lower-case variant of cmds table
-local cmds = { "w", "q", "wq", "wqa", "wa" }
-for _, cmd in ipairs(cmds) do
-    local variants = { cmd:upper() }
-    for i = 1, #cmd do
-        local variant = cmd:sub(1, i):upper() .. cmd:sub(i + 1)
-        table.insert(variants, variant)
-    end
-
-    for _, v in ipairs(variants) do
-        vim.api.nvim_create_user_command(v, cmd, {})
-    end
-end
