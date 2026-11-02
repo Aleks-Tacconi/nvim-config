@@ -1,3 +1,4 @@
+---Open Oil entries and decorate them with current Git changes.
 local M = {}
 local git_stats_namespace = vim.api.nvim_create_namespace("oil-git-diff-stats")
 
@@ -29,10 +30,12 @@ local external_extensions = {
     zip = true,
 }
 
+---Return the extension used to choose an external application.
 local function extension_for(name)
     return name:match("%.([^%.]+)$") or ""
 end
 
+---Open files with their usual editor or external application.
 function M.open_with_default_app()
     local oil = require("oil")
     local actions = require("oil.actions")
@@ -56,87 +59,127 @@ function M.open_with_default_app()
     actions.select.callback()
 end
 
+---Read NUL-delimited Git paths and collapse children to their visible directory.
 local function parse_output(proc)
     local result = proc:wait()
     local ret = {}
     if result.code == 0 then
-        for line in vim.gsplit(result.stdout, "\n", { plain = true, trimempty = true }) do
-            line = line:gsub("/$", "")
+        for line in vim.gsplit(result.stdout, "\0", { plain = true, trimempty = true }) do
+            line = line:match("^[^/]+")
             ret[line] = true
         end
     end
     return ret
 end
 
----Aggregates Git numstat output by the visible entry in the current directory.
+---Return the aggregate for a file or its visible parent directory.
+local function entry_stats(stats, path)
+    local entry = path:match("^[^/]+")
+    stats[entry] = stats[entry] or { added = 0, removed = 0 }
+    return stats[entry]
+end
+
+---Aggregate numeric and binary changes without Git's filename quoting.
 local function parse_diff_stats(output)
     local stats = {}
-    for line in vim.gsplit(output, "\n", { plain = true, trimempty = true }) do
-        local added, removed, path = line:match("^(%d+)\t(%d+)\t(.+)$")
-        local entry = path and path:match("^[^/]+")
-        if entry then
-            stats[entry] = stats[entry] or { added = 0, removed = 0 }
-            stats[entry].added = stats[entry].added + tonumber(added)
-            stats[entry].removed = stats[entry].removed + tonumber(removed)
+    for record in vim.gsplit(output, "\0", { plain = true, trimempty = true }) do
+        local added, removed, path = record:match("^([^\t]+)\t([^\t]+)\t(.+)$")
+        if path then
+            local stat = entry_stats(stats, path)
+            stat.added = stat.added + (tonumber(added) or 0)
+            stat.removed = stat.removed + (tonumber(removed) or 0)
         end
     end
     return stats
 end
 
----Displays added and removed line totals beside entries in an Oil buffer.
+---Redraw cached markers against the current filenames after Oil buffer edits.
+function M.render_git_diff_stats(bufnr)
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+    end
+    vim.api.nvim_buf_clear_namespace(bufnr, git_stats_namespace, 0, -1)
+    local stats = vim.b[bufnr].oil_git_stats or {}
+    local oil = require("oil")
+    for lnum in ipairs(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
+        local entry = oil.get_entry_on_line(bufnr, lnum)
+        local stat = entry and stats[entry.parsed_name or entry.name]
+        if stat then
+            local text = {}
+            if stat.added > 0 or stat.removed > 0 then
+                text = { { "  +" .. stat.added, "Added" }, { " -" .. stat.removed, "Removed" } }
+            elseif not stat.untracked then
+                text = { { "  ~", "Changed" } }
+            end
+            if stat.untracked then
+                table.insert(text, { "  ??", "Added" })
+            end
+            vim.api.nvim_buf_set_extmark(bufnr, git_stats_namespace, lnum - 1, 0, {
+                virt_text = text,
+                virt_text_pos = "eol",
+                invalidate = true,
+                undo_restore = false,
+            })
+        end
+    end
+end
+
+---Refresh Git counts and untracked markers, discarding obsolete async responses.
 function M.show_git_diff_stats(bufnr)
     local oil = require("oil")
     local dir = oil.get_current_dir(bufnr)
-    vim.api.nvim_buf_clear_namespace(bufnr, git_stats_namespace, 0, -1)
     if not dir then
         return
     end
-
-    vim.system({ "git", "diff", "--numstat", "HEAD", "--relative", "--", "." }, { cwd = dir, text = true }, function(result)
+    local request = (vim.b[bufnr].oil_git_request or 0) + 1
+    vim.b[bufnr].oil_git_request = request
+    local results = {}
+    ---Apply both Git results only to the buffer and request that started them.
+    local function finish(kind, result)
+        results[kind] = result
+        if not results.diff or not results.untracked then
+            return
+        end
         vim.schedule(function()
-            if result.code ~= 0 or not vim.api.nvim_buf_is_valid(bufnr) or oil.get_current_dir(bufnr) ~= dir then
+            if not vim.api.nvim_buf_is_valid(bufnr) or oil.get_current_dir(bufnr) ~= dir
+                or vim.b[bufnr].oil_git_request ~= request then
                 return
             end
-
-            local stats = parse_diff_stats(result.stdout)
-            local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-            local max_width = 0
-            for _, line in ipairs(lines) do
-                max_width = math.max(max_width, vim.fn.strdisplaywidth(line))
-            end
-
-            vim.api.nvim_buf_clear_namespace(bufnr, git_stats_namespace, 0, -1)
-            for lnum, line in ipairs(lines) do
-                local entry = oil.get_entry_on_line(bufnr, lnum)
-                local stat = entry and stats[entry.name]
-                if stat then
-                    local padding = string.rep(" ", max_width - vim.fn.strdisplaywidth(line) + 2)
-                    vim.api.nvim_buf_set_extmark(bufnr, git_stats_namespace, lnum - 1, #line, {
-                        virt_text = {
-                            { padding, "Normal" },
-                            { "+" .. stat.added, "Added" },
-                            { " ", "Normal" },
-                            { "-" .. stat.removed, "Removed" },
-                        },
-                        virt_text_pos = "inline",
-                    })
+            local stats = parse_diff_stats(results.diff.stdout or "")
+            if results.untracked.code == 0 then
+                for path in vim.gsplit(results.untracked.stdout, "\0", { plain = true, trimempty = true }) do
+                    entry_stats(stats, path).untracked = true
                 end
             end
+            vim.b[bufnr].oil_git_stats = stats
+            M.render_git_diff_stats(bufnr)
         end)
+    end
+    local args = { "git", "diff", "--numstat", "-z", "--no-renames", "HEAD", "--relative", "--", "." }
+    vim.system(args, { cwd = dir, text = true }, function(result)
+        if result.code == 128 then
+            args[6] = "--cached" -- A new repository has no HEAD yet.
+            vim.system(args, { cwd = dir, text = true }, function(cached) finish("diff", cached) end)
+        else
+            finish("diff", result)
+        end
     end)
+    vim.system({ "git", "ls-files", "--others", "--exclude-standard", "-z", "--", "." },
+        { cwd = dir, text = true }, function(result) finish("untracked", result) end)
 end
 
+---Cache tracked and ignored paths for Oil's hidden-file filter.
 function M.new_git_status()
     return setmetatable({}, {
         __index = function(self, key)
             local ignore_proc = vim.system(
-                { "git", "ls-files", "--ignored", "--exclude-standard", "--others", "--directory" },
+                { "git", "ls-files", "--ignored", "--exclude-standard", "--others", "--directory", "-z" },
                 {
                     cwd = key,
                     text = true,
                 }
             )
-            local tracked_proc = vim.system({ "git", "ls-tree", "HEAD", "--name-only" }, {
+            local tracked_proc = vim.system({ "git", "ls-files", "--cached", "-z" }, {
                 cwd = key,
                 text = true,
             })

@@ -11,7 +11,7 @@ local function map(mode, lhs, rhs, desc, extra_opts)
 end
 
 map("n", "z=", function()
-	require("config.telescope").spell_suggestions()
+	require("snacks").picker.spelling()
 end, "Spell suggestions")
 
 ---Open Oil unless its current buffer already represents the working directory.

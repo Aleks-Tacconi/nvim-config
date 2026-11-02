@@ -37,20 +37,6 @@ return {
 					},
 				})
 			end,
-			swipl_fmt = {
-				command = "swipl",
-				stdin = false,
-				args = {
-					"-q",
-					"-g",
-					"use_module(library(prolog_format))",
-					"-g",
-					"prolog_format:format_file('$FILENAME')",
-					"-t",
-					"halt",
-				},
-				tempfile_postfix = ".pl",
-			},
 		},
 	},
 }

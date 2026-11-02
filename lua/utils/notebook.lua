@@ -25,93 +25,9 @@ M.default_notebook_json = vim.json.encode({
 -- SETUP & INITIALIZATION
 --------------------------------------------------------------------------------
 
-local loaded_molten_images = {}
-
----Patches Molten's image_api to keep images rendered in the persistent right pane
----even when the cursor moves out of the code block.
-local function patch_molten_image_api()
-  local ok, load_image = pcall(require, "load_image_nvim")
-  if not ok or not load_image.image_api then return end
-  local api = load_image.image_api
-  if api._patched_right_pane then return end
-  api._patched_right_pane = true
-
-  local function get_right_pane_win()
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-      local r_ok, is_right = pcall(vim.api.nvim_win_get_var, win, "is_molten_right_pane")
-      if r_ok and is_right and vim.api.nvim_win_is_valid(win) then
-        return win
-      end
-    end
-    return nil
-  end
-
-  local orig_from_file = api.from_file
-  api.from_file = function(path, opts)
-    opts = opts or {}
-    local right_win = get_right_pane_win()
-    if right_win then
-      opts.window = right_win
-    end
-    local res = orig_from_file(path, opts)
-    loaded_molten_images[path] = {
-      buffer = opts.buffer,
-      window = right_win,
-    }
-    return res
-  end
-
-  local orig_render = api.render
-  api.render = function(identifier, geometry)
-    local right_win = get_right_pane_win()
-    local ok_img, image_mod = pcall(require, "image")
-    if ok_img and image_mod.get_images then
-      for _, img in ipairs(image_mod.get_images()) do
-        if (img.path == identifier or img.id == identifier) and right_win then
-          img.window = right_win
-        end
-      end
-    end
-
-    orig_render(identifier, geometry)
-
-    if ok_img and image_mod.get_images then
-      for _, img in ipairs(image_mod.get_images()) do
-        if (img.path == identifier or img.id == identifier) and right_win then
-          img.window = right_win
-        end
-      end
-    end
-  end
-
-  local orig_clear = api.clear
-  api.clear = function(identifier)
-    local right_win = get_right_pane_win()
-    if right_win and vim.api.nvim_win_is_valid(right_win) then
-      local right_buf = vim.api.nvim_win_get_buf(right_win)
-      local entry = loaded_molten_images[identifier]
-      if entry and entry.buffer == right_buf then
-        -- Output buffer is still displayed in the right pane; keep image rendered.
-        return
-      end
-
-      local ok_img, image_mod = pcall(require, "image")
-      if ok_img and image_mod.get_images then
-        for _, img in ipairs(image_mod.get_images()) do
-          if (img.path == identifier or img.id == identifier) and img.buffer == right_buf then
-            return
-          end
-        end
-      end
-    end
-
-    orig_clear(identifier)
-  end
-end
-
 ---Initializes Molten plugin variables before it loads
 function M.init()
-  patch_molten_image_api()
+  require("utils.notebook_images").setup()
   M.set_output_window_size()
   vim.api.nvim_create_autocmd("VimResized", { callback = M.set_output_window_size })
 
@@ -270,7 +186,7 @@ function M.setup()
   local group = vim.api.nvim_create_augroup("notebook_setup", { clear = true })
   vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#89b4fa", default = true })
 
-  patch_molten_image_api()
+  require("utils.notebook_images").setup()
 
   if vim.fn.exists("*MoltenUpdateOption") == 1 then
     pcall(vim.fn.MoltenUpdateOption, "image_location", "float")
@@ -470,7 +386,7 @@ function M.set_output_keymaps(buf)
         vim.cmd("wincmd p")
         pcall(vim.cmd, "MoltenHideOutput")
       end
-    end, { buffer = buf, silent = true, nowait = true })
+    end, { buf = buf, silent = true, nowait = true })
   end
 end
 
@@ -508,7 +424,7 @@ function M.set_buffer_keymaps(buf)
     { "n", "<localleader>op", function() M.export_to_pdf() end, "export notebook to pdf" },
   }
   for _, m in ipairs(maps) do
-    vim.keymap.set(m[1], m[2], m[3], { buffer = buf, desc = m[4], silent = true })
+    vim.keymap.set(m[1], m[2], m[3], { buf = buf, desc = m[4], silent = true })
   end
 end
 
