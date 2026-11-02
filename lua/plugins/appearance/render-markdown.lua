@@ -22,7 +22,7 @@ return {
 	opts = {
 		anti_conceal = { enabled = true },
 		render_modes = { "n", "c", "t", "i" },
-		file_types = { "markdown", "Avante", "copilot-chat" },
+		file_types = { "markdown" },
 		code = {
 			disable_background = false,
 			border = "thin",

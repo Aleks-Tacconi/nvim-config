@@ -13,7 +13,6 @@ local languages = {
 	gotmpl = { "go" },
 	html = { "html" },
 	htmldjango = { "html" },
-	java = { "java" },
 	javascript = { "javascript" },
 	javascriptreact = { "javascript" },
 	typescript = { "javascript" },
@@ -72,7 +71,6 @@ end
 return {
 	"neovim/nvim-lspconfig",
 	dependencies = {
-		{ "j-hui/fidget.nvim", opts = { notification = { override_vim_notify = true } } },
 		"saghen/blink.cmp",
 	},
 	event = { "BufReadPre", "BufNewFile", "VimEnter", "FileType" },

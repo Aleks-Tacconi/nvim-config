@@ -25,7 +25,6 @@ Optional but useful:
 
 - `lazygit`
 - language-specific LSPs and formatters (See my [NixOS config](https://github.com/Aleks-Tacconi/NixOSConfig) for more details)
-- `jdtls` and Java for Java language support
 - Jupytext, Jupyter, a Python provider, and ImageMagick on PATH for notebooks and images
 - for QML projects, expose your Qt/QML modules through `QML_IMPORT_PATH` or `QML2_IMPORT_PATH` so `qmlls` can resolve imports
 
@@ -55,7 +54,7 @@ Optional but useful:
 
 - `lua/config/` for globals, options, keymaps, filetypes, and autocmds
 - `lua/config/treesitter.lua` for parser installation and native highlighting
-- `lua/config/telescope.lua` for Telescope setup and custom pickers
+- `lua/plugins/qol/snacks.lua` for search pickers and input/select dialogs
 - `lua/plugins/navigation/` for search and movement plugins
 - `lua/plugins/qol/` for editing, git, markdown, and testing
 - `lua/plugins/appearance/` for UI and theme-related plugins
@@ -66,7 +65,7 @@ Optional but useful:
 - General keymaps: `lua/config/keymaps.lua`
 - Core autocmds: `lua/config/autocmds.lua`
 - Rose Pine theme setup: `lua/plugins/appearance/colorscheme.lua`
-- Telescope setup and pickers: `lua/config/telescope.lua`
+- Search pickers: `lua/plugins/qol/snacks.lua`
 - LSP keymaps: `lua/lsp/config/keymaps.lua`
 - Main plugin loading: `init.lua`
 
@@ -74,12 +73,19 @@ Optional but useful:
 
 - `Ctrl-H` and `Ctrl-L` select the previous and next quickfix entries.
 - `Ctrl-Backspace` deletes the previous word in Insert and Command-line modes.
+- Completion uses `Ctrl-J`/`Ctrl-K` to select, `Ctrl-Y` to accept, and `Ctrl-E` to cancel.
+- `Tab`/`Shift-Tab` move between snippet placeholders.
+- Search uses Snacks Picker: `<leader>sf` for files, `<leader>sg` for grep, and `<leader>sd` for diagnostics.
+- `gr` finds LSP references, `gi` finds implementations, and `z=` opens spelling suggestions.
 - Use native `Ctrl-W` commands to move between windows.
 - Swap files and write backups are disabled; persistent undo is enabled.
 - Plugins are managed with lazy.nvim; Treesitter uses its current `main` API.
 
-## Verification
+## Git review
 
-After installing plugins and parsers, run `nvim --clean -i NONE -n --headless -l tests/config.lua`.
-The checks cover quickfix mappings, notebook file preservation, language registration,
-project executable resolution, SQL diagnostics, and Treesitter cell navigation.
+- `:DiffviewOpen` opens a native side-by-side diff with the file panel hidden.
+- Use `:DiffviewOpen --untracked-files=no -- %` to review only the current tracked file.
+- Opening Oil closes the active Diffview and returns to normal file browsing.
+- `Tab`/`Shift-Tab` cycle changed files; `gt`/`gT` switch Neovim tab pages.
+- `:DiffviewClose` closes the diff view.
+- Oil shows `+N -N` for tracked changes, `??` for untracked files, and `~` for changes without line counts.

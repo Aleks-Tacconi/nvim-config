@@ -1,10 +1,6 @@
+---Configure completion appearance and explicit editing shortcuts.
 return {
     "saghen/blink.cmp",
-
-    dependencies = {
-        "rafamadriz/friendly-snippets",
-    },
-
     version = "1.*",
     opts = {
         keymap = {
@@ -13,9 +9,9 @@ return {
             ["<C-j>"] = { "select_next", "fallback" },
             ["<C-k>"] = { "select_prev", "fallback" },
             ["<C-y>"] = { "accept", "fallback" },
-        },
-        sources = {
-            default = { "lsp", "path", "snippets", "buffer" },
+            ["<C-e>"] = { "cancel", "fallback" },
+            ["<Tab>"] = { "snippet_forward", "fallback" },
+            ["<S-Tab>"] = { "snippet_backward", "fallback" },
         },
         completion = {
             trigger = {
@@ -24,8 +20,6 @@ return {
                 show_on_blocked_trigger_characters = {},
             },
             documentation = {
-                auto_show = false,
-                auto_show_delay_ms = 0,
                 window = {
                     border = "single",
                 },
@@ -50,5 +44,4 @@ return {
             },
         },
     },
-    opts_extend = { "sources.default" },
 }

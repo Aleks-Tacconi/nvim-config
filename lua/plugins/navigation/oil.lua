@@ -1,3 +1,4 @@
+---Configure Oil navigation and keep Git decorations synchronized with its rows.
 return {
     "stevearc/oil.nvim",
     cmd = { "Oil" },
@@ -5,24 +6,12 @@ return {
         local utils = require("utils.oil")
         local oil = require("oil")
 
-        local refresh = require("oil.actions").refresh
         local git_status = utils.new_git_status()
-        local orig_refresh = refresh.callback
-        refresh.callback = function(...)
-            local bufnr = vim.api.nvim_get_current_buf()
-            git_status = utils.new_git_status()
-            orig_refresh(...)
-            vim.defer_fn(function()
-                if vim.api.nvim_buf_is_valid(bufnr) then
-                    utils.show_git_diff_stats(bufnr)
-                end
-            end, 200)
-        end
 
-        local Path = require("plenary.path")
+        ---Hide ignored entries and untracked dotfiles.
         local function is_hidden_file(name, bufnr)
             local dir = require("oil").get_current_dir(bufnr)
-            if not Path:new(dir):exists() then
+            if not dir or vim.fn.isdirectory(dir) == 0 then
                 return false
             end
 
@@ -44,11 +33,30 @@ return {
             },
         })
 
+        local group = vim.api.nvim_create_augroup("oil-git-diff-stats", { clear = true })
         vim.api.nvim_create_autocmd("User", {
-            group = vim.api.nvim_create_augroup("oil-git-diff-stats", { clear = true }),
-            pattern = "OilEnter",
+            group = group,
+            pattern = { "OilEnter", "OilActionsPost" },
             callback = function(args)
-                utils.show_git_diff_stats(args.data.buf)
+                git_status = utils.new_git_status()
+                utils.show_git_diff_stats(args.data.buf or vim.api.nvim_get_current_buf())
+            end,
+        })
+        vim.api.nvim_create_autocmd({ "BufEnter", "FocusGained" }, {
+            group = group,
+            callback = function(args)
+                if vim.bo[args.buf].filetype == "oil" then
+                    git_status = utils.new_git_status()
+                    utils.show_git_diff_stats(args.buf)
+                end
+            end,
+        })
+        vim.api.nvim_create_autocmd({ "TextChanged", "TextChangedI" }, {
+            group = group,
+            callback = function(args)
+                if vim.bo[args.buf].filetype == "oil" then
+                    utils.render_git_diff_stats(args.buf)
+                end
             end,
         })
     end,

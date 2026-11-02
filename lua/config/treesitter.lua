@@ -1,7 +1,7 @@
 ---Install parsers and attach native highlighting to supported file buffers.
 local M = {}
 
-M.parsers = { "markdown", "markdown_inline", "html", "latex", "typst", "yaml", "rust", "ron", "python", "lua", "java" }
+M.parsers = { "markdown", "markdown_inline", "html", "latex", "typst", "yaml", "rust", "ron", "python", "lua" }
 
 ---Enable highlighting and optional Treesitter indentation for one buffer.
 local function attach(buf, lang)

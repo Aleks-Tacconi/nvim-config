@@ -2,30 +2,13 @@ local function harpoon_list()
     return require("harpoon"):list()
 end
 
-local function toggle_telescope()
-    local harpoon_files = harpoon_list().items
-    local file_paths = {}
-
-    for _, item in ipairs(harpoon_files) do
-        table.insert(file_paths, item.value)
-    end
-
-    require("config.telescope").harpoon_files(file_paths)
-end
-
 return {
     "ThePrimeagen/harpoon",
     branch = "harpoon2",
     dependencies = {
         "nvim-lua/plenary.nvim",
-        "nvim-telescope/telescope.nvim",
     },
     keys = {
-        {
-            "<leader>H",
-            toggle_telescope,
-            desc = "Harpoon picker",
-        },
         {
             "<leader>h",
             function()
