@@ -4,7 +4,7 @@ A personal and opinionated Neovim config. Features include:
 
 - LSP, diagnostics, completion, and native snippets
 - File, buffer, and project navigation
-- Git and testing tools
+- Git tools
 - Markdown and MDX support with general editing quality-of-life
 
 ## Screenshot
@@ -56,7 +56,7 @@ Optional but useful:
 - `lua/config/treesitter.lua` for parser installation and native highlighting
 - `lua/plugins/qol/snacks.lua` for search pickers and input/select dialogs
 - `lua/plugins/navigation/` for search and movement plugins
-- `lua/plugins/qol/` for editing, git, markdown, and testing
+- `lua/plugins/qol/` for editing, git, and markdown
 - `lua/plugins/appearance/` for UI and theme-related plugins
 - `lua/lsp/plugins/` for language tooling
 
@@ -83,9 +83,8 @@ Optional but useful:
 
 ## Git review
 
-- `:DiffviewOpen` opens a native side-by-side diff with the file panel hidden.
-- Use `:DiffviewOpen --untracked-files=no -- %` to review only the current tracked file.
-- Opening Oil closes the active Diffview and returns to normal file browsing.
-- `Tab`/`Shift-Tab` cycle changed files; `gt`/`gT` switch Neovim tab pages.
-- `:DiffviewClose` closes the diff view.
+- `:DeltaView` or `<leader>v` opens a unified diff of the current file against HEAD (or the last selected ref).
+- `:DeltaMenu` or `<leader>dm` selects a changed file through Snacks; `:DeltaMenu!` opens the quickfix review workflow.
+- `:Delta .` reviews changes across the current directory; `<leader>da` opens the current path's diff.
+- In a diff, `Tab`/`Shift-Tab` move between hunks and `q`/`Esc` return to the source file.
 - Oil shows `+N -N` for tracked changes, `??` for untracked files, and `~` for changes without line counts.

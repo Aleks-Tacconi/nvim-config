@@ -1,4 +1,29 @@
 ---Provide pickers, dialogs, notifications, and LazyGit.
+
+---Read Git status once per file picker, including untracked files.
+local function git_file_status(opts)
+	local snacks = require("snacks")
+	local root = snacks.git.get_root(opts.cwd or vim.fn.getcwd())
+	if not root then
+		return
+	end
+	local result = vim.system({
+		"git", "status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames",
+	}, { cwd = root }):wait()
+	if result.code ~= 0 then
+		vim.notify(result.stderr, vim.log.levels.ERROR)
+		return
+	end
+	local statuses = {}
+	for record in vim.gsplit(result.stdout, "\0", { plain = true, trimempty = true }) do
+		statuses[vim.fs.normalize(root .. "/" .. record:sub(4))] = record:sub(1, 2)
+	end
+	---Attach Git status for Snacks' built-in file icons and highlights.
+	opts.transform = function(item)
+		item.status = statuses[snacks.picker.util.path(item)]
+	end
+end
+
 return {
 	"folke/snacks.nvim",
 	lazy = false,
@@ -56,6 +81,7 @@ return {
 				end,
 			},
 			sources = {
+				files = { config = git_file_status },
 				diagnostics = { filter = { cwd = false } },
 			},
 		},
