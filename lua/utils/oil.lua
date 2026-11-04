@@ -59,14 +59,16 @@ function M.open_with_default_app()
     actions.select.callback()
 end
 
----Read NUL-delimited Git paths and collapse children to their visible directory.
-local function parse_output(proc)
+---Read Git paths, optionally counting descendants toward their visible directory.
+local function parse_output(proc, include_descendants)
     local result = proc:wait()
     local ret = {}
     if result.code == 0 then
         for line in vim.gsplit(result.stdout, "\0", { plain = true, trimempty = true }) do
-            line = line:match("^[^/]+")
-            ret[line] = true
+            line = line:match(include_descendants and "^[^/]+" or "^([^/]+)/?$")
+            if line then
+                ret[line] = true
+            end
         end
     end
     return ret
@@ -185,7 +187,7 @@ function M.new_git_status()
             })
             local ret = {
                 ignored = parse_output(ignore_proc),
-                tracked = parse_output(tracked_proc),
+                tracked = parse_output(tracked_proc, true),
             }
 
             rawset(self, key, ret)
