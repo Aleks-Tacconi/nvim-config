@@ -260,6 +260,23 @@ function M.save_outputs()
 	end
 end
 
+---Clear saved outputs from the `.ipynb` file on disk via nbconvert.
+function M.clear_outputs()
+	local path = vim.api.nvim_buf_get_name(0)
+	if not is_notebook(path) then
+		return
+	end
+	vim.cmd("write")
+	vim.system(
+		{ "jupyter", "nbconvert", "--clear-output", "--inplace", path },
+		{ text = true },
+		vim.schedule_wrap(function(res)
+			local level = res.code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR
+			vim.notify(res.code == 0 and "Cleared notebook outputs" or ("Clear outputs failed:\n" .. res.stderr), level)
+		end)
+	)
+end
+
 ---Export the current notebook to PDF using Quarto or nbconvert.
 function M.export_to_pdf(fmt)
 	local path = vim.api.nvim_buf_get_name(0)
@@ -401,6 +418,7 @@ function M.setup()
 	end, { nargs = "?" })
 	vim.api.nvim_create_user_command("NotebookLoadOutputs", M.load_outputs, {})
 	vim.api.nvim_create_user_command("NotebookSaveOutputs", M.save_outputs, {})
+	vim.api.nvim_create_user_command("MoltenClearExport", M.clear_outputs, {})
 	vim.api.nvim_create_user_command("NotebookHelp", M.show_help, {})
 end
 
