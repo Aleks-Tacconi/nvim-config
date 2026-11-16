@@ -9,6 +9,7 @@ local function set_notebook_highlights()
 	vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#9ccfd8", bg = "NONE" })
 	-- Prevent Molten from painting a second background only behind text tokens in evaluated cells.
 	vim.api.nvim_set_hl(0, "MoltenCell", { bg = "NONE" })
+	vim.api.nvim_set_hl(0, "MoltenOutputBorder", { fg = "#c4a7e7", bg = "NONE" })
 end
 
 return {
