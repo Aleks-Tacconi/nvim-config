@@ -1,540 +1,351 @@
----Notebook utilities for Molten, Jupytext, and Quarto integration.
+---Configure Jupyter notebook editing, kernel execution, and cell navigation.
 local M = {}
+local margin_ns = vim.api.nvim_create_namespace("notebook_active_cell_margin")
 
-local OUTPUT_WIN_RATIO = 0.8
-M.default_notebook_json = vim.json.encode({
-  cells = {
-    {
-      id = "cell-1",
-      cell_type = "code",
-      execution_count = vim.NIL,
-      metadata = vim.empty_dict(),
-      outputs = {},
-      source = {},
-    },
-  },
-  metadata = {
-    kernelspec = { display_name = "Python 3", language = "python", name = "python3" },
-    language_info = { name = "python", version = "3" },
-  },
-  nbformat = 4,
-  nbformat_minor = 5,
+local DEFAULT_NOTEBOOK_JSON = vim.json.encode({
+	cells = {
+		{
+			id = "cell-1",
+			cell_type = "code",
+			execution_count = vim.NIL,
+			metadata = vim.empty_dict(),
+			outputs = {},
+			source = {},
+		},
+	},
+	metadata = {
+		kernelspec = { display_name = "Python 3", language = "python", name = "python3" },
+		language_info = { name = "python", version = "3" },
+	},
+	nbformat = 4,
+	nbformat_minor = 5,
 })
 
---------------------------------------------------------------------------------
--- SETUP & INITIALIZATION
---------------------------------------------------------------------------------
+local HELP_LINES = {
+	"# Notebook Shortcuts & Commands",
+	"",
+	"  Tab / Shift-Tab   Next / previous code cell (Normal mode)",
+	"  <space>na / nb    Insert code cell above / below",
+	"  <space>rc / rj    Run cell / Run cell and advance",
+	"  <space>ra / rA    Run above / Run all cells",
+	"  <space>r          Run visual selection",
+	"  <space>mi / mr    Initialize / Restart kernel",
+	"  <space>mk / mx    Kernel info / Interrupt execution",
+	"  <space>os / oh    Enter / Hide output window",
+	"  <space>ox         Save notebook and export cell outputs",
+	"  <space>op         Export notebook to PDF",
+	"  :NewNotebook      Create and open a new blank notebook",
+	"  :NotebookToPdf    Export to PDF (pdf, typst, webpdf)",
+	"  :NotebookHelp     Open this cheatsheet",
+}
 
----Initializes Molten plugin variables before it loads
+---Return true when path points to a Jupyter notebook.
+local function is_notebook(path)
+	return path:match("%.ipynb$") ~= nil
+end
+
+---Set Molten defaults before the remote plugin loads.
 function M.init()
-  require("utils.notebook_images").setup()
-  M.set_output_window_size()
-  vim.api.nvim_create_autocmd("VimResized", { callback = M.set_output_window_size })
-
-  vim.g.molten_auto_open_output = true -- Auto-selects cells and updates output in the right pane
-  vim.g.molten_image_provider = "image.nvim"
-  vim.g.molten_image_location = "float" -- Render images only in the right pane, not inline
-  vim.g.molten_output_show_more = false
-  vim.g.molten_output_show_exec_time = true
-  vim.g.molten_output_win_border = "none" -- Remove border entirely to prevent artifacts
-  vim.g.molten_output_win_hide_on_leave = false
-  vim.g.molten_output_win_style = "minimal"
-  vim.g.molten_wrap_output = true
-  vim.g.molten_tick_rate = 150 -- Fast polling for responsive cell output updates
-  
-  -- Virtual Text Settings (Execution Status)
-  vim.g.molten_virt_text_output = true -- Enable inline virtual text for status
-  vim.g.molten_virt_text_max_lines = 2 -- Limit inline text to 2 lines (Status line + "More Lines" indicator). Keeps code clean!
-  vim.g.molten_virt_lines_off_by_1 = true
+	vim.g.molten_auto_open_output = false
+	vim.g.molten_image_provider = "image.nvim"
+	vim.g.molten_image_location = "both"
+	vim.g.molten_virt_text_output = true
+	vim.g.molten_virt_text_max_lines = 12
+	vim.g.molten_virt_lines_off_by_1 = true
+	vim.g.molten_output_show_exec_time = true
+	vim.g.molten_output_win_border = "rounded"
+	vim.g.molten_output_win_hide_on_leave = true
+	vim.g.molten_output_win_style = "minimal"
+	vim.g.molten_output_win_max_height = 20
+	vim.g.molten_output_win_max_width = 100
+	vim.g.molten_enter_output_behavior = "open_and_enter"
+	vim.g.molten_wrap_output = true
 end
 
----Hides any floating window displaying a molten output buffer so output stays in the right pane.
----@param buf? integer
-local function hide_molten_floats(buf)
-  local wins = buf and vim.fn.win_findbuf(buf) or vim.api.nvim_list_wins()
-  for _, win in ipairs(wins) do
-    if vim.api.nvim_win_is_valid(win) then
-      local cfg = vim.api.nvim_win_get_config(win)
-      if cfg.relative and cfg.relative ~= "" then
-        pcall(vim.api.nvim_win_set_config, win, { hide = true })
-      end
-    end
-  end
+---Check whether the current buffer has an active Molten kernel.
+function M.attached()
+	local loaded = vim.fn.exists("#molten#CursorMoved") == 1 or vim.fn.exists("*MoltenRunningKernels") == 1
+	return loaded and #vim.fn.MoltenRunningKernels(true) > 0
 end
 
-local cell_margin_ns = vim.api.nvim_create_namespace("notebook_active_cell_margin")
-
----Finds the fenced code block enclosing the cursor, or falls back to the first cell if none is active yet.
----@param buf integer
----@return integer? start_row, integer? end_row
-local function get_active_cell_range(buf)
-  local cursor = vim.api.nvim_win_get_cursor(0)
-  local row, col = cursor[1] - 1, cursor[2]
-  local ok, node = pcall(vim.treesitter.get_node, { bufnr = buf, pos = { row, col } })
-  if ok and node then
-    local curr = node
-    while curr do
-      if curr:type() == "fenced_code_block" then
-        local s, _, e, _ = curr:range()
-        return s, e
-      end
-      curr = curr:parent()
-    end
-  end
-
-  -- Fall back to first code cell if the buffer has no selection yet
-  if not vim.b[buf].active_cell_range then
-    local p_ok, parser = pcall(vim.treesitter.get_parser, buf, "markdown")
-    if p_ok and parser then
-      local tree = parser:parse()[1]
-      local query = vim.treesitter.query.parse("markdown", "((fenced_code_block) @cell)")
-      for _, c_node in query:iter_captures(tree:root(), buf) do
-        local s, _, e, _ = c_node:range()
-        return s, e
-      end
-    end
-  end
-
-  return nil, nil
+---Return the statusline kernel label for notebook buffers.
+function M.status()
+	if not is_notebook(vim.api.nvim_buf_get_name(0)) then
+		return ""
+	end
+	if not M.attached() then
+		return "Kernel: not started"
+	end
+	return "Kernel: " .. table.concat(vim.fn.MoltenRunningKernels(true), ", ")
 end
 
-local empty_output_buf = nil
+---Start the kernel declared in the YAML header or prompt for an available one.
+function M.initialize(callback)
+	if M.attached() then
+		if callback then
+			callback()
+		end
+		return
+	end
+	local buf = vim.api.nvim_get_current_buf()
+	local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, 25, false), "\n")
+	local declared = header:match("kernelspec:.-name:%s*([%w_%-%.]+)")
+	local available = vim.fn.MoltenAvailableKernels()
 
----Returns or creates a reusable empty scratch buffer for the right pane.
----@return integer
-local function get_empty_output_buf()
-  if not empty_output_buf or not vim.api.nvim_buf_is_valid(empty_output_buf) then
-    empty_output_buf = vim.api.nvim_create_buf(false, true)
-    vim.bo[empty_output_buf].buftype = "nofile"
-    vim.bo[empty_output_buf].bufhidden = "hide"
-    vim.bo[empty_output_buf].swapfile = false
-    vim.api.nvim_buf_set_lines(empty_output_buf, 0, -1, false, {})
-  end
-  return empty_output_buf
+	local function start(kernel_name)
+		if not kernel_name or not vim.api.nvim_buf_is_valid(buf) then
+			return
+		end
+		if callback then
+			vim.api.nvim_create_autocmd("User", {
+				pattern = "MoltenKernelReady",
+				once = true,
+				callback = function()
+					vim.schedule(function()
+						if vim.api.nvim_buf_is_valid(buf) then
+							vim.api.nvim_buf_call(buf, callback)
+						end
+					end)
+				end,
+			})
+		end
+		vim.api.nvim_buf_call(buf, function()
+			vim.cmd.MoltenInit({ args = { kernel_name } })
+		end)
+	end
+
+	if declared and vim.tbl_contains(available, declared) then
+		start(declared)
+	else
+		vim.ui.select(available, { prompt = "Notebook kernel:" }, start)
+	end
 end
 
----Clears the right pane to show an empty buffer if open.
-function M.clear_right_pane()
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    local ok, is_right = pcall(vim.api.nvim_win_get_var, win, "is_molten_right_pane")
-    if ok and is_right then
-      local empty_buf = get_empty_output_buf()
-      if vim.api.nvim_win_get_buf(win) ~= empty_buf then
-        vim.api.nvim_win_set_buf(win, empty_buf)
-      end
-      pcall(function()
-        local ok_img, image_mod = pcall(require, "image")
-        if ok_img and image_mod.get_images then
-          for _, img in ipairs(image_mod.get_images()) do
-            if img.window == win then
-              img:clear()
-            end
-          end
-        end
-      end)
-      return
-    end
-  end
+---Read fenced code block line ranges from the Markdown syntax tree.
+local function cell_ranges(buf)
+	local ok, parser = pcall(vim.treesitter.get_parser, buf, "markdown")
+	if not ok or not parser then
+		return {}
+	end
+	local tree = parser:parse()[1]
+	local query = vim.treesitter.query.parse("markdown", "(fenced_code_block) @cell")
+	local result = {}
+	for _, node in query:iter_captures(tree:root(), buf) do
+		local first, _, last, col = node:range()
+		result[#result + 1] = { first = first, last = last + (col > 0 and 1 or 0) }
+	end
+	return result
 end
 
----Returns true if the cell range has an associated molten output extmark.
----@param buf integer
----@param start_row integer
----@param end_row integer
----@return boolean
-local function cell_has_molten_output(buf, start_row, end_row)
-  local ns = vim.api.nvim_get_namespaces()["molten-extmarks"]
-  if not ns then return false end
-  local marks = vim.api.nvim_buf_get_extmarks(buf, ns, { start_row, 0 }, { end_row, 0 }, { details = true })
-  return #marks > 0
+---Return the index of the cell containing a zero-based cursor row.
+local function current_cell(all, row)
+	for i, cell in ipairs(all) do
+		if row >= cell.first and row < cell.last then
+			return i
+		end
+	end
 end
 
----Updates the active code cell margin highlight in the sign column.
----@param buf integer
-local function update_active_cell_margin(buf)
-  if not vim.api.nvim_buf_is_valid(buf) then return end
-
-  local start_row, end_row = get_active_cell_range(buf)
-  if not (start_row and end_row) then
-    return
-  end
-
-  local cur_range = vim.b[buf].active_cell_range
-  if cur_range and cur_range[1] == start_row and cur_range[2] == end_row then
-    return
-  end
-
-  vim.api.nvim_buf_clear_namespace(buf, cell_margin_ns, 0, -1)
-  vim.b[buf].active_cell_range = { start_row, end_row }
-  for r = start_row, end_row - 1 do
-    vim.api.nvim_buf_set_extmark(buf, cell_margin_ns, r, 0, {
-      sign_text = "▎",
-      sign_hl_group = "NotebookActiveCellMargin",
-      priority = 20,
-    })
-  end
-
-  if cell_has_molten_output(buf, start_row, end_row) then
-    pcall(vim.cmd, "MoltenShowOutput")
-  else
-    M.clear_right_pane()
-  end
+---Jump to the next or previous code cell.
+function M.move(direction)
+	local all = cell_ranges(0)
+	local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+	local idx = current_cell(all, row)
+	local target = idx and all[idx + direction * vim.v.count1]
+	if not target then
+		for _, cell in ipairs(all) do
+			if direction > 0 and cell.first > row then
+				target = cell
+				break
+			elseif direction < 0 and cell.last <= row then
+				target = cell
+			end
+		end
+	end
+	if target then
+		vim.api.nvim_win_set_cursor(0, { math.min(target.first + 2, vim.api.nvim_buf_line_count(0)), 0 })
+		vim.cmd("normal! zv")
+	end
 end
 
----Sets up autocmds and user commands after Molten loads
-function M.setup()
-  local group = vim.api.nvim_create_augroup("notebook_setup", { clear = true })
-  vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#89b4fa", default = true })
-
-  require("utils.notebook_images").setup()
-
-  if vim.fn.exists("*MoltenUpdateOption") == 1 then
-    pcall(vim.fn.MoltenUpdateOption, "image_location", "float")
-  end
-
-  -- Sync newly created or reopened Molten buffers to the right pane IMMEDIATELY.
-  vim.api.nvim_create_autocmd({ "FileType", "BufWinEnter" }, {
-    group = group,
-    pattern = "*",
-    callback = function(event)
-      if vim.bo[event.buf].filetype == "molten_output" then
-        M.set_output_keymaps(event.buf)
-        M.open_in_right_pane(event.buf)
-        hide_molten_floats(event.buf)
-      end
-    end,
-  })
-
-  -- Markdown / Notebook Initialization
-  vim.api.nvim_create_autocmd("FileType", {
-    group = group,
-    pattern = "markdown",
-    callback = function(event)
-      if M.is_notebook(vim.api.nvim_buf_get_name(event.buf)) then
-        M.set_buffer_keymaps(event.buf)
-        -- Inject Python LSP diagnostics into markdown notebook code blocks
-        local ok, otter = pcall(require, "otter")
-        if ok then
-          otter.activate({ "python" }, true, true, nil)
-        end
-        vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
-          group = group,
-          buffer = event.buf,
-          callback = function()
-            update_active_cell_margin(event.buf)
-          end,
-        })
-        update_active_cell_margin(event.buf)
-      end
-    end,
-  })
-
-  -- Lifecycle Management
-  vim.api.nvim_create_autocmd("BufNewFile", {
-    group = group,
-    pattern = "*.ipynb",
-    callback = function(args)
-      if M.write_template(args.file) then
-        vim.schedule(function()
-          if vim.api.nvim_buf_is_valid(args.buf) then
-            vim.api.nvim_buf_call(args.buf, function() vim.cmd.edit({ bang = true }) end)
-          end
-        end)
-      end
-    end,
-  })
-
-  vim.api.nvim_create_autocmd("FileChangedShell", {
-    group = group,
-    pattern = "*.ipynb",
-    callback = function() vim.v.fcs_choice = "reload" end,
-  })
-
-  -- User Commands
-  vim.api.nvim_create_user_command("NewNotebook", function(opts)
-    M.create_new_notebook(opts.args)
-  end, { nargs = 1, complete = "file", desc = "Create and open a new Jupyter notebook" })
-
-  vim.api.nvim_create_user_command("NotebookToPdf", function(opts)
-    M.export_to_pdf(opts.args ~= "" and opts.args or nil)
-  end, {
-    nargs = "?",
-    complete = function() return { "pdf", "typst", "webpdf" } end,
-    desc = "Export current notebook to PDF (optional arg: pdf, typst, webpdf)",
-  })
-
-  vim.api.nvim_create_user_command("NotebookClearOutputs", M.clear_outputs, {
-    desc = "Clear all outputs from the current notebook file",
-  })
-
-  vim.api.nvim_create_user_command("NotebookHelp", require("utils.notebook_help").show, {
-    desc = "Show notebook shortcuts and commands cheatsheet",
-  })
+---Insert a fenced Python cell above or below the current cell.
+function M.insert(below)
+	local all = cell_ranges(0)
+	local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+	local idx = current_cell(all, row)
+	local cell = idx and all[idx]
+	local at = cell and (below and cell.last or cell.first) or (row + (below and 1 or 0))
+	vim.api.nvim_buf_set_lines(0, at, at, false, { "", "```python", "", "```", "" })
+	vim.api.nvim_win_set_cursor(0, { at + 3, 0 })
+	vim.cmd("startinsert")
 end
 
-
---------------------------------------------------------------------------------
--- WINDOW & UI MANAGEMENT
---------------------------------------------------------------------------------
-
----Opens the molten buffer in a persistent right pane
----@param buf integer
----@return boolean
-function M.open_in_right_pane(buf)
-  local right_pane_win = nil
-
-  -- Locate the relevant windows
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    local ok, is_right = pcall(vim.api.nvim_win_get_var, win, "is_molten_right_pane")
-    if ok and is_right then
-      right_pane_win = win
-    end
-  end
-
-  -- Create the right pane if it doesn't exist
-  if not right_pane_win or not vim.api.nvim_win_is_valid(right_pane_win) then
-    local original_win = vim.api.nvim_get_current_win()
-    vim.cmd("botright vsplit")
-    right_pane_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_var(right_pane_win, "is_molten_right_pane", true)
-    vim.api.nvim_win_set_width(right_pane_win, math.floor(vim.o.columns * 0.3))
-    vim.api.nvim_set_current_win(original_win)
-  end
-
-  -- Display the molten buffer in our right pane
-  if vim.api.nvim_win_get_buf(right_pane_win) ~= buf then
-    vim.api.nvim_win_set_buf(right_pane_win, buf)
-    vim.api.nvim_set_option_value("wrap", true, { win = right_pane_win })
-    vim.api.nvim_set_option_value("number", false, { win = right_pane_win })
-    vim.api.nvim_set_option_value("relativenumber", false, { win = right_pane_win })
-    vim.api.nvim_set_option_value("signcolumn", "yes:1", { win = right_pane_win }) -- Adds clean left padding
-    vim.api.nvim_set_option_value("cursorline", true, { win = right_pane_win })
-    vim.api.nvim_set_option_value("statusline", " %#String# 󰌠 Jupyter Output ", { win = right_pane_win })
-    vim.api.nvim_set_option_value("winhighlight", "StatusLine:Title,StatusLineNC:Comment", { win = right_pane_win })
-    pcall(vim.api.nvim_set_option_value, "syntax", "python", { buf = buf }) -- Highlight arrays/dicts nicely
-  end
-
-  return true
+---Draw a sign bar in the margin for the active code cell.
+function M.highlight(buf)
+	if not vim.api.nvim_buf_is_valid(buf) then
+		return
+	end
+	vim.api.nvim_buf_clear_namespace(buf, margin_ns, 0, -1)
+	local all = cell_ranges(buf)
+	local idx = current_cell(all, vim.api.nvim_win_get_cursor(0)[1] - 1)
+	if not idx then
+		return
+	end
+	for row = all[idx].first, all[idx].last - 1 do
+		vim.api.nvim_buf_set_extmark(buf, margin_ns, row, 0, {
+			sign_text = "▎",
+			sign_hl_group = "NotebookActiveCellMargin",
+			priority = 20,
+		})
+	end
 end
 
----Focuses the persistent right pane if it exists, showing output for the active cell.
-function M.enter_output()
-  pcall(vim.cmd, "MoltenShowOutput")
-  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    local ok, is_right = pcall(vim.api.nvim_win_get_var, win, "is_molten_right_pane")
-    if ok and is_right then
-      vim.api.nvim_set_current_win(win)
-      return
-    end
-  end
-  vim.notify("No active Jupyter output pane found.", vim.log.levels.WARN)
-end
-
----Hides all Molten output: float window and inline virtual text.
-function M.hide_output()
-  M.set_virtual_output(false)
-  pcall(vim.cmd, "MoltenHideOutput")
-  M.clear_virtual_output()
-end
-
----Caps Molten output windows to 1x1 to prevent popup flashes over the editor.
-function M.set_output_window_size()
-  vim.g.molten_output_win_max_height = 1
-  vim.g.molten_output_win_max_width = 1
-  if vim.fn.exists("*MoltenUpdateOption") == 1 then
-    vim.fn.MoltenUpdateOption("output_win_max_height", 1)
-    vim.fn.MoltenUpdateOption("output_win_max_width", 1)
-  end
-end
-
----Toggles Molten virtual text output option.
----@param enabled boolean
-function M.set_virtual_output(enabled)
-  vim.g.molten_virt_text_output = enabled
-  if vim.fn.exists("*MoltenUpdateOption") == 1 then
-    pcall(vim.fn.MoltenUpdateOption, "virt_text_output", enabled)
-  end
-end
-
----Clears Molten virtual text extmarks in the current buffer.
-function M.clear_virtual_output()
-  local namespace = vim.api.nvim_get_namespaces()["molten-extmarks"]
-  if not namespace then return end
-
-  local extmarks = vim.api.nvim_buf_get_extmarks(0, namespace, 0, -1, { details = true })
-  for _, extmark in ipairs(extmarks) do
-    if (extmark[4] or {}).virt_lines then
-      pcall(vim.api.nvim_buf_del_extmark, 0, namespace, extmark[1])
-    end
-  end
-end
-
-
---------------------------------------------------------------------------------
--- KEYMAPS
---------------------------------------------------------------------------------
-
----Maps q and <Esc> in a Molten output buffer to close the right pane.
----@param buf integer
-function M.set_output_keymaps(buf)
-  for _, lhs in ipairs({ "q", "<Esc>" }) do
-    vim.keymap.set("n", lhs, function()
-      local ok, is_right = pcall(vim.api.nvim_win_get_var, 0, "is_molten_right_pane")
-      if ok and is_right then
-        vim.cmd("close")
-      else
-        vim.cmd("wincmd p")
-        pcall(vim.cmd, "MoltenHideOutput")
-      end
-    end, { buf = buf, silent = true, nowait = true })
-  end
-end
-
----Runs a quarto runner function and ensures Molten output is shown in the right pane.
----@param name string quarto.runner function name
-local function run(name)
-  return function()
-    require("quarto.runner")[name]()
-    pcall(vim.cmd, "MoltenShowOutput")
-    vim.schedule(function()
-      pcall(vim.cmd, "MoltenShowOutput")
-    end)
-  end
-end
-
----Sets notebook keymaps local to a notebook buffer.
----@param buf integer
-function M.set_buffer_keymaps(buf)
-  local maps = {
-    { "n", "<localleader>rc", run("run_cell"), "run cell" },
-    { "n", "<localleader>ra", run("run_above"), "run above" },
-    { "n", "<localleader>rA", run("run_all"), "run all" },
-    { "v", "<localleader>r", run("run_range"), "run range" },
-    { "n", "<localleader>mi", function()
-      local ml_kernel = vim.fn.expand("~/.local/share/jupyter/kernels/machine-learning")
-      if vim.fn.isdirectory(ml_kernel) == 1 then
-        vim.cmd("MoltenInit machine-learning")
-      else
-        vim.cmd("MoltenInit")
-      end
-    end, "initialize molten kernel" },
-    { "n", "<localleader>os", M.enter_output, "enter output window" },
-    { "n", "<localleader>oh", M.hide_output, "hide output" },
-    { "n", "<localleader>ox", "<cmd>MoltenExportOutput!<CR>", "export output to notebook" },
-    { "n", "<localleader>op", function() M.export_to_pdf() end, "export notebook to pdf" },
-  }
-  for _, m in ipairs(maps) do
-    vim.keymap.set(m[1], m[2], m[3], { buf = buf, desc = m[4], silent = true })
-  end
-end
-
-
---------------------------------------------------------------------------------
--- FILE UTILITIES
---------------------------------------------------------------------------------
-
----Returns true if the path points to a Jupyter notebook.
----@param path string
-function M.is_notebook(path)
-  return path:match("%.ipynb$") ~= nil
-end
-
----Writes the blank notebook template to path. Returns true on success.
----@param path string
----@return boolean
-function M.write_template(path)
-  local file = io.open(path, "w")
-  if not file then
-    vim.notify("Could not create notebook: " .. path, vim.log.levels.ERROR)
-    return false
-  end
-  file:write(M.default_notebook_json)
-  file:close()
-  return true
-end
-
----Creates a new Jupyter notebook file and opens it.
----@param filename string
+---Write a blank `.ipynb` template to disk and open it.
 function M.create_new_notebook(filename)
-  local path = M.is_notebook(filename) and filename or (filename .. ".ipynb")
-  if vim.fn.filereadable(path) == 1 then
-    vim.notify("Notebook already exists, opening: " .. path, vim.log.levels.WARN)
-  elseif not M.write_template(path) then
-    return
-  end
-  vim.cmd.edit(vim.fn.fnameescape(path))
+	local path = is_notebook(filename) and filename or (filename .. ".ipynb")
+	if vim.fn.filereadable(path) == 0 then
+		local file = io.open(path, "w")
+		if not file then
+			vim.notify("Could not create notebook: " .. path, vim.log.levels.ERROR)
+			return
+		end
+		file:write(DEFAULT_NOTEBOOK_JSON)
+		file:close()
+	end
+	vim.cmd.edit({ args = { path } })
 end
 
-
---------------------------------------------------------------------------------
--- EXPORT & KERNEL UTILITIES
---------------------------------------------------------------------------------
-
----Returns the current buffer path if it is a saved notebook, else nil.
----@return string?
-local function current_notebook()
-  local filepath = vim.api.nvim_buf_get_name(0)
-  if not M.is_notebook(filepath) then
-    vim.notify("Current buffer is not a Jupyter notebook (.ipynb)", vim.log.levels.WARN)
-    return nil
-  end
-  if vim.bo.modified then
-    vim.cmd("write")
-  end
-  return filepath
+---Save the notebook and explicitly export Molten outputs into `.ipynb`.
+function M.save_outputs()
+	vim.cmd("write")
+	if M.attached() then
+		vim.cmd("MoltenExportOutput!")
+	end
 end
 
----Converts the current notebook to PDF using quarto or jupyter nbconvert.
----@param output_format? string "pdf" | "typst" | "webpdf"
-function M.export_to_pdf(output_format)
-  local filepath = current_notebook()
-  if not filepath then return end
-
-  local ok, molten = pcall(require, "molten.status")
-  if ok and molten.initialized() == "Molten" then
-    pcall(vim.cmd, "MoltenExportOutput!")
-  end
-
-  local cmd
-  if vim.fn.executable("quarto") == 1 then
-    cmd = { "quarto", "render", filepath, "--to", output_format or "pdf", "--no-execute" }
-  elseif vim.fn.executable("jupyter") == 1 then
-    cmd = { "jupyter", "nbconvert", "--to", output_format == "typst" and "pdf" or (output_format or "pdf"), filepath }
-  else
-    vim.notify("Neither 'quarto' nor 'jupyter' executable found in PATH.", vim.log.levels.ERROR)
-    return
-  end
-
-  vim.notify("Exporting " .. vim.fs.basename(filepath) .. " to PDF...", vim.log.levels.INFO)
-  vim.system(cmd, { text = true }, vim.schedule_wrap(function(res)
-    if res.code == 0 then
-      local pdf_path = vim.fn.fnamemodify(filepath, ":r") .. ".pdf"
-      vim.notify("Exported successfully to " .. vim.fs.basename(pdf_path), vim.log.levels.INFO)
-    else
-      local err_msg = res.stderr ~= "" and res.stderr or res.stdout
-      vim.notify("Failed to export notebook to PDF:\n" .. err_msg, vim.log.levels.ERROR)
-    end
-  end))
+---Export the current notebook to PDF using Quarto or nbconvert.
+function M.export_to_pdf(fmt)
+	local path = vim.api.nvim_buf_get_name(0)
+	if not is_notebook(path) then
+		return
+	end
+	vim.cmd("write")
+	local cmd = vim.fn.executable("quarto") == 1
+			and { "quarto", "render", path, "--to", fmt or "pdf", "--no-execute" }
+		or { "jupyter", "nbconvert", "--to", fmt or "pdf", path }
+	vim.system(cmd, { text = true }, vim.schedule_wrap(function(res)
+		local level = res.code == 0 and vim.log.levels.INFO or vim.log.levels.ERROR
+		vim.notify(res.code == 0 and "Exported PDF" or ("PDF export failed:\n" .. res.stderr), level)
+	end))
 end
 
----Clears all outputs from the current Jupyter notebook on disk and reloads it.
-function M.clear_outputs()
-  local filepath = current_notebook()
-  if not filepath then return end
-  if vim.fn.executable("jupyter") ~= 1 then
-    vim.notify("'jupyter' executable not found in PATH to clear outputs.", vim.log.levels.ERROR)
-    return
-  end
+---Display the floating shortcut cheatsheet.
+function M.show_help()
+	local buf = vim.api.nvim_create_buf(false, true)
+	vim.api.nvim_buf_set_lines(buf, 0, -1, false, HELP_LINES)
+	vim.bo[buf].filetype = "markdown"
+	vim.bo[buf].bufhidden = "wipe"
+	vim.bo[buf].modifiable = false
+	vim.api.nvim_open_win(buf, true, {
+		relative = "editor",
+		width = 62,
+		height = #HELP_LINES,
+		row = math.floor((vim.o.lines - #HELP_LINES) / 2),
+		col = math.floor((vim.o.columns - 62) / 2),
+		style = "minimal",
+		border = "rounded",
+		title = " Notebook Cheatsheet ",
+		title_pos = "center",
+	})
+	for _, key in ipairs({ "q", "<Esc>" }) do
+		vim.keymap.set("n", key, "<cmd>close<CR>", { buffer = buf, silent = true, nowait = true })
+	end
+end
 
-  local res = vim.system({ "jupyter", "nbconvert", "--clear-output", "--inplace", filepath }, { text = true }):wait()
-  if res.code ~= 0 then
-    vim.notify("Failed to clear outputs: " .. res.stderr, vim.log.levels.ERROR)
-    return
-  end
-  
-  M.hide_output()
-  vim.cmd("edit!")
-  vim.notify("Cleared all outputs in " .. vim.fs.basename(filepath), vim.log.levels.INFO)
+---Run a Quarto runner method after ensuring the kernel is attached.
+local function run(method, advance)
+	return function()
+		M.initialize(function()
+			require("quarto.runner")[method]()
+			if advance then
+				M.move(1)
+			end
+		end)
+	end
+end
+
+---Run the active visual selection.
+function M.run_selection()
+	run("run_range")()
+end
+
+---Attach notebook-local keymaps, options, and margin highlights.
+local function attach(event)
+	local buf = event.buf
+	if not is_notebook(vim.api.nvim_buf_get_name(buf)) then
+		return
+	end
+	vim.opt_local.spell = false
+	vim.opt_local.colorcolumn = ""
+	vim.opt_local.conceallevel = 2
+	vim.opt_local.concealcursor = "nc"
+
+	local maps = {
+		{ "n", "<Tab>", function() M.move(1) end, "Next code cell" },
+		{ "n", "<S-Tab>", function() M.move(-1) end, "Previous code cell" },
+		{ "n", "<localleader>rc", run("run_cell"), "Run cell" },
+		{ "n", "<localleader>rj", run("run_cell", true), "Run cell and advance" },
+		{ "n", "<localleader>ra", run("run_above"), "Run through current cell" },
+		{ "n", "<localleader>rA", run("run_all"), "Run all cells" },
+		{ "x", "<localleader>r", ":<C-u>lua require('utils.notebook').run_selection()<CR>", "Run selection" },
+		{ "n", "<localleader>na", function() M.insert(false) end, "Insert code cell above" },
+		{ "n", "<localleader>nb", function() M.insert(true) end, "Insert code cell below" },
+		{ "n", "<localleader>mi", M.initialize, "Initialize notebook kernel" },
+		{ "n", "<localleader>mk", "<cmd>MoltenInfo<CR>", "Kernel information" },
+		{ "n", "<localleader>mx", "<cmd>MoltenInterrupt<CR>", "Interrupt execution" },
+		{ "n", "<localleader>mr", "<cmd>MoltenRestart<CR>", "Restart kernel" },
+		{ "n", "<localleader>os", "<cmd>noautocmd MoltenEnterOutput<CR>", "Inspect full output" },
+		{ "n", "<localleader>oh", "<cmd>MoltenHideOutput<CR>", "Close output inspector" },
+		{ "n", "<localleader>ox", M.save_outputs, "Save notebook and outputs" },
+		{ "n", "<localleader>op", M.export_to_pdf, "Export notebook to PDF" },
+		{ "n", "<localleader>nh", M.show_help, "Notebook shortcuts" },
+	}
+	for _, m in ipairs(maps) do
+		vim.keymap.set(m[1], m[2], m[3], { buffer = buf, desc = m[4], silent = true })
+	end
+
+	local group = vim.api.nvim_create_augroup("notebook_cells_" .. buf, { clear = true })
+	vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "TextChanged", "TextChangedI", "BufEnter" }, {
+		group = group,
+		buffer = buf,
+		callback = function()
+			M.highlight(buf)
+		end,
+	})
+	M.highlight(buf)
+end
+
+---Register notebook autocommands and user commands.
+function M.setup()
+	local group = vim.api.nvim_create_augroup("notebook_setup", { clear = true })
+	vim.api.nvim_create_autocmd("FileType", { group = group, pattern = "markdown", callback = attach })
+	vim.api.nvim_create_autocmd("FileType", {
+		group = group,
+		pattern = "molten_output",
+		callback = function(event)
+			for _, key in ipairs({ "q", "<Esc>" }) do
+				vim.keymap.set("n", key, "<cmd>close<CR>", { buffer = event.buf, silent = true })
+			end
+		end,
+	})
+	vim.api.nvim_create_user_command("NewNotebook", function(opts)
+		M.create_new_notebook(opts.args)
+	end, { nargs = 1, complete = "file" })
+	vim.api.nvim_create_user_command("NotebookToPdf", function(opts)
+		M.export_to_pdf(opts.args ~= "" and opts.args or nil)
+	end, { nargs = "?" })
+	vim.api.nvim_create_user_command("NotebookSaveOutputs", M.save_outputs, {})
+	vim.api.nvim_create_user_command("NotebookHelp", M.show_help, {})
 end
 
 return M

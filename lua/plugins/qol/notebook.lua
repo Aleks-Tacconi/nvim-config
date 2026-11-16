@@ -18,10 +18,9 @@ return {
       tmux_show_only_in_active_window = true,
       max_width = 100,
       max_height = 25,
-      max_height_window_percentage = math.huge,
-      max_width_window_percentage = math.huge,
-      window_overlap_clear_enabled = false,
-      window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "" },
+      max_height_window_percentage = 50,
+      max_width_window_percentage = 90,
+      window_overlap_clear_enabled = true,
     },
   },
 
@@ -62,7 +61,7 @@ return {
     dependencies = { "nvim-treesitter/nvim-treesitter" },
     opts = {
       lsp = {
-        diagnostic_update_events = { "BufWritePost", "InsertLeave", "TextChanged" },
+        diagnostic_update_events = { "BufWritePost", "InsertLeave" },
       },
     },
   },

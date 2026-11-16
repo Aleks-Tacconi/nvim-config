@@ -88,3 +88,30 @@ Optional but useful:
 - `:Delta .` reviews changes across the current directory; `<leader>da` opens the current path's diff.
 - In a diff, `Tab`/`Shift-Tab` move between hunks and `q`/`Esc` return to the source file.
 - Oil shows `+N -N` for tracked changes, `??` for untracked files, and `~` for changes without line counts.
+
+## Notebooks
+
+Open `.ipynb` files directly or use `:NewNotebook name`. Results and plots appear
+below their cells. `<space>os` opens a scrollable output inspector; `q` or `Esc`
+closes it. Restart Neovim after changing notebook configuration.
+
+- Normal-mode `Tab` / `Shift-Tab`: next / previous code cell, without wrapping.
+- Insert-mode `Tab` / `Shift-Tab`: existing snippet navigation.
+- `<space>rc`: run cell; `<space>rj`: run cell and advance.
+- `<space>ra`: run through the current cell; `<space>rA`: run all cells.
+- `<space>na` / `<space>nb`: insert a Python cell above / below.
+- `<space>mi`: start the notebook's declared kernel, or choose one if unavailable.
+- `<space>mk`: kernel information; `<space>mx`: interrupt; `<space>mr`: restart.
+- `:w` or `<space>ox`: save code, then export results from the attached kernel.
+- `:NotebookHelp` or `<space>nh`: all notebook shortcuts.
+
+The first run starts the kernel and displays output only for the cells you run.
+`:NotebookLoadOutputs` explicitly loads all saved outputs. Loading results does not
+restore Python variables; rerun earlier cells when their state is needed.
+The statusline shows the attached kernel. Select a kernel with the same environment
+as the project's Python tooling to keep execution and completion consistent.
+
+`:NotebookClearOutputs` clears saved results and stops the attached kernel, so old
+results cannot be saved back accidentally. `:NotebookToPdf` exports without executing
+the notebook. Notebook tools must be on PATH; `NVIM_PYTHON_PROVIDER` can point to a
+Python environment containing `pynvim`, Jupytext, Jupyter, and `nbformat`.
