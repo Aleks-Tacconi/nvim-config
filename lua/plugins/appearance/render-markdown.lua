@@ -25,6 +25,7 @@ return {
 	---@module 'render-markdown'
 	---@type render.md.UserConfig
 	opts = {
+		max_file_size = math.huge,
 		anti_conceal = {
 			enabled = true,
 			ignore = { code_background = true, code_border = true, code_language = true },
