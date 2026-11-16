@@ -1,11 +1,14 @@
+---Configure Markdown and notebook rendering.
 local function set_notebook_highlights()
-	vim.api.nvim_set_hl(0, "NotebookCellBody", { bg = "#17191f" })
-	vim.api.nvim_set_hl(0, "NotebookCellBorder", { bg = "#3a3f4b" })
-	vim.api.nvim_set_hl(0, "NotebookCellInfo", { fg = "#6e7681", bg = "none" })
-	vim.api.nvim_set_hl(0, "NotebookCellLanguage", { fg = "#a6adc8", bg = "none" })
-	vim.api.nvim_set_hl(0, "RenderMarkdownCode", { bg = "#17191f" })
-	vim.api.nvim_set_hl(0, "RenderMarkdownCodeInline", { bg = "#161616" })
-	vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#89b4fa" })
+	vim.api.nvim_set_hl(0, "NotebookCellBody", { bg = "#1f1d2e" })
+	vim.api.nvim_set_hl(0, "NotebookCellBorder", { bg = "#403d52" })
+	vim.api.nvim_set_hl(0, "NotebookCellInfo", { fg = "#6e6a86", bg = "NONE" })
+	vim.api.nvim_set_hl(0, "NotebookCellLanguage", { fg = "#9ccfd8", bg = "NONE", bold = true })
+	vim.api.nvim_set_hl(0, "RenderMarkdownCode", { bg = "#1f1d2e" })
+	vim.api.nvim_set_hl(0, "RenderMarkdownCodeInline", { fg = "#ebbcba", bg = "#26233a" })
+	vim.api.nvim_set_hl(0, "NotebookActiveCellMargin", { fg = "#9ccfd8", bg = "NONE" })
+	-- Prevent Molten from painting a second background only behind text tokens in evaluated cells.
+	vim.api.nvim_set_hl(0, "MoltenCell", { bg = "NONE" })
 end
 
 return {
@@ -20,21 +23,25 @@ return {
 	---@module 'render-markdown'
 	---@type render.md.UserConfig
 	opts = {
-		anti_conceal = { enabled = true },
+		anti_conceal = {
+			enabled = true,
+			ignore = { code_background = true, code_border = true, code_language = true },
+		},
 		render_modes = { "n", "c", "t", "i" },
 		file_types = { "markdown" },
 		code = {
 			disable_background = false,
 			border = "thin",
-			language = false,
-			language_border = "-",
-			language_icon = false,
+			language = true,
+			language_border = "─",
+			language_icon = true,
+			language_name = true,
 			language_left = " ",
 			language_right = " ",
 			left_pad = 1,
 			right_pad = 1,
-			above = "-",
-			below = "-",
+			above = "─",
+			below = "─",
 			highlight = "NotebookCellBody",
 			highlight_border = "NotebookCellBorder",
 			highlight_info = "NotebookCellInfo",

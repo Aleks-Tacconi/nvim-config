@@ -3,55 +3,22 @@ return {
     dependencies = { "nvim-tree/nvim-web-devicons" },
     event = "VeryLazy",
     config = function()
+        local active = {
+            a = { fg = "#c4a7e7", bg = "none" },
+            b = { fg = "#6e6a86", bg = "none" },
+            c = { fg = "#e0def4", bg = "none" },
+            x = { fg = "#6e6a86", bg = "none" },
+            y = { fg = "#6e6a86", bg = "none" },
+            z = { fg = "#6e6a86", bg = "none" },
+        }
+        local muted = { fg = "#6e6a86", bg = "none" }
         local theme = {
-            normal = {
-                a = { fg = "#c4a7e7", bg = "none" },
-                b = { fg = "#6e6a86", bg = "none" },
-                c = { fg = "#e0def4", bg = "none" },
-                x = { fg = "#6e6a86", bg = "none" },
-                y = { fg = "#6e6a86", bg = "none" },
-                z = { fg = "#6e6a86", bg = "none" },
-            },
-            insert = {
-                a = { fg = "#c4a7e7", bg = "none" },
-                b = { fg = "#6e6a86", bg = "none" },
-                c = { fg = "#e0def4", bg = "none" },
-                x = { fg = "#6e6a86", bg = "none" },
-                y = { fg = "#6e6a86", bg = "none" },
-                z = { fg = "#6e6a86", bg = "none" },
-            },
-            visual = {
-                a = { fg = "#c4a7e7", bg = "none" },
-                b = { fg = "#6e6a86", bg = "none" },
-                c = { fg = "#e0def4", bg = "none" },
-                x = { fg = "#6e6a86", bg = "none" },
-                y = { fg = "#6e6a86", bg = "none" },
-                z = { fg = "#6e6a86", bg = "none" },
-            },
-            replace = {
-                a = { fg = "#c4a7e7", bg = "none" },
-                b = { fg = "#6e6a86", bg = "none" },
-                c = { fg = "#e0def4", bg = "none" },
-                x = { fg = "#6e6a86", bg = "none" },
-                y = { fg = "#6e6a86", bg = "none" },
-                z = { fg = "#6e6a86", bg = "none" },
-            },
-            command = {
-                a = { fg = "#c4a7e7", bg = "none" },
-                b = { fg = "#6e6a86", bg = "none" },
-                c = { fg = "#e0def4", bg = "none" },
-                x = { fg = "#6e6a86", bg = "none" },
-                y = { fg = "#6e6a86", bg = "none" },
-                z = { fg = "#6e6a86", bg = "none" },
-            },
-            inactive = {
-                a = { fg = "#6e6a86", bg = "none" },
-                b = { fg = "#6e6a86", bg = "none" },
-                c = { fg = "#6e6a86", bg = "none" },
-                x = { fg = "#6e6a86", bg = "none" },
-                y = { fg = "#6e6a86", bg = "none" },
-                z = { fg = "#6e6a86", bg = "none" },
-            },
+            normal = active,
+            insert = active,
+            visual = active,
+            replace = active,
+            command = active,
+            inactive = { a = muted, b = muted, c = muted, x = muted, y = muted, z = muted },
         }
 
         require("lualine").setup({
@@ -71,7 +38,7 @@ return {
                 },
                 lualine_b = { "branch", "diff" },
                 lualine_c = { { "filename", path = 1 } },
-                lualine_x = { "filetype" },
+                lualine_x = { require("utils.notebook").status, "filetype" },
                 lualine_y = {},
                 lualine_z = {
                     {

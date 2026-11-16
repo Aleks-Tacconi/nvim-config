@@ -3,8 +3,31 @@ local M = {}
 
 M.parsers = { "markdown", "markdown_inline", "html", "latex", "typst", "yaml", "rust", "ron", "python", "lua" }
 
+local markdown_query_patched = false
+
+---Keep Markdown code fence rows visible so render-markdown borders are not hidden.
+local function patch_markdown_query()
+	if markdown_query_patched then
+		return
+	end
+	local files = vim.treesitter.query.get_files("markdown", "highlights")
+	if #files == 0 then
+		return
+	end
+	local queries = {}
+	for _, path in ipairs(files) do
+		local source = table.concat(vim.fn.readfile(path), "\n")
+		queries[#queries + 1] = source:gsub('%(#set! conceal_lines ""%)', "")
+	end
+	vim.treesitter.query.set("markdown", "highlights", table.concat(queries, "\n"))
+	markdown_query_patched = true
+end
+
 ---Enable highlighting and optional Treesitter indentation for one buffer.
 local function attach(buf, lang)
+	if lang == "markdown" then
+		patch_markdown_query()
+	end
 	vim.treesitter.start(buf, lang)
 	if vim.bo[buf].filetype ~= "typescript" and vim.bo[buf].filetype ~= "typescriptreact" then
 		vim.bo[buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
@@ -44,6 +67,7 @@ end
 function M.setup()
 	local ts = require("nvim-treesitter")
 	ts.setup({ install_dir = vim.fn.stdpath("data") .. "/site" })
+	patch_markdown_query()
 	ts.install(M.parsers)
 	vim.api.nvim_create_autocmd("FileType", {
 		group = vim.api.nvim_create_augroup("treesitter-highlight", { clear = true }),
