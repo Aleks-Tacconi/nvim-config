@@ -14,6 +14,7 @@ end
 
 return {
 	"MeanderingProgrammer/render-markdown.nvim",
+	lazy = false,
 	dependencies = { "nvim-treesitter/nvim-treesitter", "nvim-tree/nvim-web-devicons" },
 	init = function()
 		set_notebook_highlights()
@@ -54,5 +55,4 @@ return {
 		require("render-markdown").setup(opts)
 		set_notebook_highlights()
 	end,
-	ft = { "markdown", "Avante", "copilot-chat" },
 }
