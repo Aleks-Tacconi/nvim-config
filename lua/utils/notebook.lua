@@ -32,7 +32,7 @@ local HELP_LINES = {
 	"  <space>mi / mr    Initialize / Restart kernel",
 	"  <space>mk / mx    Kernel info / Interrupt execution",
 	"  <space>os / oh    Enter / Hide output window",
-	"  <space>ox         Save notebook and export cell outputs",
+	"  <space>ol / ox    Load saved outputs / Save & export outputs",
 	"  <space>op         Export notebook to PDF",
 	"  :NewNotebook      Create and open a new blank notebook",
 	"  :NotebookToPdf    Export to PDF (pdf, typst, webpdf)",
@@ -42,6 +42,26 @@ local HELP_LINES = {
 ---Return true when path points to a Jupyter notebook.
 local function is_notebook(path)
 	return path:match("%.ipynb$") ~= nil
+end
+
+---Return true when an `.ipynb` file contains at least one code cell with outputs.
+local function has_saved_outputs(path)
+	local file = io.open(path, "r")
+	if not file then
+		return false
+	end
+	local raw = file:read("*a")
+	file:close()
+	local ok, nb = pcall(vim.json.decode, raw)
+	if not ok or type(nb) ~= "table" or type(nb.cells) ~= "table" then
+		return false
+	end
+	for _, cell in ipairs(nb.cells) do
+		if cell.cell_type == "code" and type(cell.outputs) == "table" and #cell.outputs > 0 then
+			return true
+		end
+	end
+	return false
 end
 
 ---Set Molten defaults before the remote plugin loads.
@@ -80,7 +100,8 @@ function M.status()
 end
 
 ---Start the kernel declared in the YAML header or prompt for an available one.
-function M.initialize(callback)
+function M.initialize(callback, opts)
+	opts = opts or {}
 	if M.attached() then
 		if callback then
 			callback()
@@ -114,7 +135,10 @@ function M.initialize(callback)
 		end)
 	end
 
-	if declared and vim.tbl_contains(available, declared) then
+	if #available == 0 then
+		return
+	end
+	if not opts.prompt and declared and vim.tbl_contains(available, declared) then
 		start(declared)
 	else
 		vim.ui.select(available, { prompt = "Notebook kernel:" }, start)
@@ -215,6 +239,19 @@ function M.create_new_notebook(filename)
 	vim.cmd.edit({ args = { path } })
 end
 
+---Import saved `.ipynb` outputs into Molten for the current notebook buffer.
+function M.load_outputs()
+	local path = vim.api.nvim_buf_get_name(0)
+	if not is_notebook(path) or not has_saved_outputs(path) then
+		return
+	end
+	if M.attached() then
+		pcall(vim.cmd, "MoltenImportOutput")
+	else
+		M.initialize()
+	end
+end
+
 ---Save the notebook and explicitly export Molten outputs into `.ipynb`.
 function M.save_outputs()
 	vim.cmd("write")
@@ -306,6 +343,7 @@ local function attach(event)
 		{ "n", "<localleader>mr", "<cmd>MoltenRestart<CR>", "Restart kernel" },
 		{ "n", "<localleader>os", "<cmd>noautocmd MoltenEnterOutput<CR>", "Inspect full output" },
 		{ "n", "<localleader>oh", "<cmd>MoltenHideOutput<CR>", "Close output inspector" },
+		{ "n", "<localleader>ol", M.load_outputs, "Load saved outputs" },
 		{ "n", "<localleader>ox", M.save_outputs, "Save notebook and outputs" },
 		{ "n", "<localleader>op", M.export_to_pdf, "Export notebook to PDF" },
 		{ "n", "<localleader>nh", M.show_help, "Notebook shortcuts" },
@@ -322,7 +360,24 @@ local function attach(event)
 			M.highlight(buf)
 		end,
 	})
+	vim.api.nvim_create_autocmd("User", {
+		group = group,
+		pattern = "MoltenKernelReady",
+		once = true,
+		callback = function()
+			vim.schedule(function()
+				if vim.api.nvim_buf_is_valid(buf) then
+					vim.api.nvim_buf_call(buf, M.load_outputs)
+				end
+			end)
+		end,
+	})
 	M.highlight(buf)
+	vim.schedule(function()
+		if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_get_current_buf() == buf and not M.attached() then
+			M.initialize(nil, { prompt = true })
+		end
+	end)
 end
 
 ---Register notebook autocommands and user commands.
@@ -344,6 +399,7 @@ function M.setup()
 	vim.api.nvim_create_user_command("NotebookToPdf", function(opts)
 		M.export_to_pdf(opts.args ~= "" and opts.args or nil)
 	end, { nargs = "?" })
+	vim.api.nvim_create_user_command("NotebookLoadOutputs", M.load_outputs, {})
 	vim.api.nvim_create_user_command("NotebookSaveOutputs", M.save_outputs, {})
 	vim.api.nvim_create_user_command("NotebookHelp", M.show_help, {})
 end
