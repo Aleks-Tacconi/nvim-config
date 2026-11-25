@@ -3,8 +3,9 @@ local M = {}
 
 local LIST_KEY = "__harpoon_files"
 local data_dir = vim.fn.stdpath("data") .. "/harpoon"
-local lists, menu = {}, {}
+local lists = {}
 local hooks_registered = false
+local menu = { win = nil, buf = nil, cwd = nil, list = nil }
 
 ---Normalize `path` relative to `cwd` when inside `cwd`, or as an absolute path.
 local function normalize_path(path, cwd)
@@ -19,15 +20,6 @@ end
 ---Return the JSON storage path for `cwd`, matching Harpoon2's file layout.
 local function storage_path(cwd)
 	return data_dir .. "/" .. vim.fn.sha256(cwd) .. ".json"
-end
-
----Read and JSON-decode `path`, returning an empty table when missing or invalid.
-local function read_json(path)
-	if vim.fn.filereadable(path) == 0 then
-		return {}
-	end
-	local ok, data = pcall(vim.json.decode, table.concat(vim.fn.readfile(path), "\n"))
-	return (ok and type(data) == "table") and data or {}
 end
 
 ---Decode one saved entry (JSON string or table) into `{ value, context }`.
@@ -45,8 +37,13 @@ end
 
 ---Read the persisted mark list for `cwd` from disk.
 local function read_list(cwd)
-	local data = read_json(storage_path(cwd))
-	local raw_items = type(data[cwd]) == "table" and data[cwd][LIST_KEY] or nil
+	local file = io.open(storage_path(cwd), "r")
+	if not file then
+		return { items = {}, len = 0 }
+	end
+	local ok, data = pcall(vim.json.decode, file:read("*a"))
+	file:close()
+	local raw_items = ok and type(data) == "table" and type(data[cwd]) == "table" and data[cwd][LIST_KEY] or nil
 	if type(raw_items) ~= "table" then
 		return { items = {}, len = 0 }
 	end
@@ -54,7 +51,8 @@ local function read_list(cwd)
 	for k, v in pairs(raw_items) do
 		local idx, decoded = tonumber(k), decode_entry(v)
 		if idx and idx > 0 and decoded then
-			items[idx], len = decoded, math.max(len, idx)
+			items[idx] = decoded
+			len = math.max(len, idx)
 		end
 	end
 	return { items = items, len = len }
@@ -64,13 +62,24 @@ end
 local function save_list(cwd, list)
 	vim.fn.mkdir(data_dir, "p")
 	local path = storage_path(cwd)
-	local data, encoded = read_json(path), {}
+	local existing = {}
+	local in_file = io.open(path, "r")
+	if in_file then
+		local ok, decoded = pcall(vim.json.decode, in_file:read("*a"))
+		in_file:close()
+		existing = (ok and type(decoded) == "table") and decoded or {}
+	end
+	local encoded = {}
 	for i = 1, list.len do
 		encoded[i] = list.items[i] and vim.json.encode(list.items[i]) or vim.NIL
 	end
-	data[cwd] = data[cwd] or {}
-	data[cwd][LIST_KEY] = encoded
-	vim.fn.writefile({ vim.json.encode(data) }, path)
+	existing[cwd] = existing[cwd] or {}
+	existing[cwd][LIST_KEY] = encoded
+	local out_file = io.open(path, "w")
+	if out_file then
+		out_file:write(vim.json.encode(existing))
+		out_file:close()
+	end
 end
 
 ---Register `BufLeave` and `VimLeavePre` hooks once to remember cursor positions.
@@ -122,17 +131,21 @@ local function apply_menu_lines(cwd, list, lines)
 	while len > 0 and vim.trim(lines[len]) == "" do
 		len = len - 1
 	end
-	local by_value, new_items, seen = {}, {}, {}
+	local by_value = {}
 	for i = 1, list.len do
 		if list.items[i] then
 			by_value[list.items[i].value] = list.items[i]
 		end
 	end
+	local new_items, seen = {}, {}
 	for i = 1, len do
-		local rel = normalize_path(vim.trim(lines[i]), cwd)
-		if rel ~= "" and not seen[rel] then
-			seen[rel] = true
-			new_items[i] = by_value[rel] or { value = rel, context = { row = 1, col = 0 } }
+		local raw = vim.trim(lines[i])
+		if raw ~= "" then
+			local rel = normalize_path(raw, cwd)
+			if not seen[rel] then
+				seen[rel] = true
+				new_items[i] = by_value[rel] or { value = rel, context = { row = 1, col = 0 } }
+			end
 		end
 	end
 	list.items, list.len = new_items, len
@@ -145,7 +158,7 @@ local function close_menu(save)
 	if not win and not buf then
 		return
 	end
-	menu = {}
+	menu.win, menu.buf, menu.cwd, menu.list = nil, nil, nil, nil
 	if save and cwd and list and buf and vim.api.nvim_buf_is_valid(buf) then
 		apply_menu_lines(cwd, list, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
 	end
@@ -163,7 +176,9 @@ local function select_from_list(cwd, list, index)
 	if not item or item.value == "" then
 		return
 	end
-	local bufnr = vim.fn.bufadd(normalize_path(item.value, cwd))
+	local full = vim.startswith(item.value, "/") and item.value or (cwd .. "/" .. item.value)
+	local target = vim.fs.relpath(vim.fs.normalize(cwd), vim.fs.normalize(full)) or vim.fs.normalize(full)
+	local bufnr = vim.fn.bufadd(target)
 	local first_load = not vim.api.nvim_buf_is_loaded(bufnr)
 	if first_load then
 		vim.fn.bufload(bufnr)
@@ -171,9 +186,11 @@ local function select_from_list(cwd, list, index)
 	end
 	vim.api.nvim_set_current_buf(bufnr)
 	if first_load and item.context then
-		local row = math.min(math.max(item.context.row or 1, 1), vim.api.nvim_buf_line_count(bufnr))
+		local max_row = vim.api.nvim_buf_line_count(bufnr)
+		local row = math.min(math.max(item.context.row or 1, 1), max_row)
 		local line = vim.api.nvim_buf_get_lines(bufnr, row - 1, row, false)[1] or ""
-		vim.api.nvim_win_set_cursor(0, { row, math.min(math.max(item.context.col or 0, 0), #line) })
+		local col = math.min(math.max(item.context.col or 0, 0), #line)
+		vim.api.nvim_win_set_cursor(0, { row, col })
 	end
 end
 
@@ -208,19 +225,24 @@ end
 
 ---Add the current file buffer to the first available slot for the working directory.
 function M.add()
-	local cwd, name = vim.uv.cwd(), vim.api.nvim_buf_get_name(0)
+	local cwd = vim.uv.cwd()
+	local name = vim.api.nvim_buf_get_name(0)
 	if vim.bo.buftype ~= "" or not cwd or name == "" then
 		return
 	end
-	local rel, list = normalize_path(name, cwd), get_list(cwd)
+	local rel = normalize_path(name, cwd)
+	local list = get_list(cwd)
 	for i = 1, list.len do
 		if list.items[i] and list.items[i].value == rel then
 			return
 		end
 	end
-	local slot = 1
-	while list.items[slot] do
-		slot = slot + 1
+	local slot = list.len + 1
+	for i = 1, list.len do
+		if list.items[i] == nil then
+			slot = i
+			break
+		end
 	end
 	local pos = vim.api.nvim_win_get_cursor(0)
 	list.items[slot] = { value = rel, context = { row = pos[1], col = pos[2] } }
@@ -249,7 +271,8 @@ function M.toggle_menu()
 	if not cwd then
 		return
 	end
-	local current_rel, list = normalize_path(vim.api.nvim_buf_get_name(0), cwd), get_list(cwd)
+	local current_rel = normalize_path(vim.api.nvim_buf_get_name(0), cwd)
+	local list = get_list(cwd)
 	local lines, cursor_row = {}, 1
 	for i = 1, list.len do
 		lines[i] = list.items[i] and list.items[i].value or ""
@@ -263,9 +286,15 @@ function M.toggle_menu()
 	vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 	vim.bo[buf].filetype, vim.bo[buf].buftype, vim.bo[buf].bufhidden, vim.bo[buf].modified = "harpoon", "acwrite", "wipe", false
 	local win = vim.api.nvim_open_win(buf, true, {
-		relative = "editor", title = "Harpoon", title_pos = "left", style = "minimal", border = "single",
-		row = math.floor(((vim.o.lines - height) / 2) - 1), col = math.floor((vim.o.columns - width) / 2),
-		width = width, height = height,
+		relative = "editor",
+		title = "Harpoon",
+		title_pos = "left",
+		row = math.floor(((vim.o.lines - height) / 2) - 1),
+		col = math.floor((vim.o.columns - width) / 2),
+		width = width,
+		height = height,
+		style = "minimal",
+		border = "single",
 	})
 	vim.wo[win].number = true
 	if #lines > 0 then

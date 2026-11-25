@@ -56,3 +56,15 @@ map("n", "<leader>u", function()
 	vim.cmd.packadd("nvim.undotree")
 	vim.cmd.Undotree()
 end, "Toggle undo tree")
+
+map("n", "<leader>h", function()
+	require("utils.harpoon").toggle_menu()
+end, "Harpoon menu")
+map("n", "<leader>a", function()
+	require("utils.harpoon").add()
+end, "Harpoon add file")
+for i = 1, 8 do
+	map("n", "<leader>" .. i, function()
+		require("utils.harpoon").select(i)
+	end, "Harpoon file " .. i)
+end
