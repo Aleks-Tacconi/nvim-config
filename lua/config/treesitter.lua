@@ -4,6 +4,8 @@ local M = {}
 M.parsers = { "markdown", "markdown_inline", "html", "latex", "typst", "yaml", "rust", "ron", "python", "lua" }
 
 local markdown_query_patched = false
+local installed_parsers = {}
+local installing = {}
 
 ---Keep Markdown code fence rows visible so render-markdown borders are not hidden.
 local function patch_markdown_query()
@@ -15,9 +17,13 @@ local function patch_markdown_query()
 		return
 	end
 	local queries = {}
-	for _, path in ipairs(files) do
+	for i, path in ipairs(files) do
 		local source = table.concat(vim.fn.readfile(path), "\n")
-		queries[#queries + 1] = source:gsub('%(#set! conceal_lines ""%)', "")
+		source = source:gsub('%(#set! conceal_lines ""%)', "")
+		if i > 1 then
+			source = source:gsub("^%s*;+%s*extends%s*\n?", "")
+		end
+		queries[#queries + 1] = source
 	end
 	vim.treesitter.query.set("markdown", "highlights", table.concat(queries, "\n"))
 	markdown_query_patched = true
@@ -45,19 +51,27 @@ local function start(buf)
 	end
 
 	local ts = require("nvim-treesitter")
-	if vim.tbl_contains(ts.get_installed("parsers"), lang) then
+	if installed_parsers[lang] then
 		attach(buf, lang)
 		return
 	end
+	if installing[lang] then
+		table.insert(installing[lang], buf)
+		return
+	end
+	installing[lang] = { buf }
 	ts.install({ lang }):await(function(err, success)
 		vim.schedule(function()
-			if
-				not err
-				and success
-				and vim.api.nvim_buf_is_valid(buf)
-				and vim.treesitter.language.get_lang(vim.bo[buf].filetype) == lang
-			then
-				attach(buf, lang)
+			local waiting = installing[lang] or {}
+			installing[lang] = nil
+			if err or not success then
+				return
+			end
+			installed_parsers[lang] = true
+			for _, b in ipairs(waiting) do
+				if vim.api.nvim_buf_is_valid(b) and vim.treesitter.language.get_lang(vim.bo[b].filetype) == lang then
+					attach(b, lang)
+				end
 			end
 		end)
 	end)
@@ -67,8 +81,38 @@ end
 function M.setup()
 	local ts = require("nvim-treesitter")
 	ts.setup({ install_dir = vim.fn.stdpath("data") .. "/site" })
-	patch_markdown_query()
-	ts.install(M.parsers)
+
+	for _, lang in ipairs(ts.get_installed("parsers")) do
+		installed_parsers[lang] = true
+	end
+	local missing = vim.tbl_filter(function(lang)
+		return not installed_parsers[lang]
+	end, M.parsers)
+	if #missing > 0 then
+		for _, lang in ipairs(missing) do
+			installing[lang] = installing[lang] or {}
+		end
+		ts.install(missing):await(function(err, success)
+			vim.schedule(function()
+				for _, lang in ipairs(missing) do
+					local waiting = installing[lang] or {}
+					installing[lang] = nil
+					if not err and success then
+						installed_parsers[lang] = true
+						for _, b in ipairs(waiting) do
+							if
+								vim.api.nvim_buf_is_valid(b)
+								and vim.treesitter.language.get_lang(vim.bo[b].filetype) == lang
+							then
+								attach(b, lang)
+							end
+						end
+					end
+				end
+			end)
+		end)
+	end
+
 	vim.api.nvim_create_autocmd("FileType", {
 		group = vim.api.nvim_create_augroup("treesitter-highlight", { clear = true }),
 		callback = function(event)

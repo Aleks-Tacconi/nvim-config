@@ -34,6 +34,7 @@ return {
 		},
 	},
 	opts = {
+		bigfile = { enabled = true },
 		input = {},
 		lazygit = {
 			win = { width = 0, height = 0, border = "none" },

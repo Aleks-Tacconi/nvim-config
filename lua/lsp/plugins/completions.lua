@@ -2,6 +2,8 @@
 return {
     "saghen/blink.cmp",
     version = "1.*",
+    dependencies = { "rafamadriz/friendly-snippets" },
+    event = { "InsertEnter", "CmdlineEnter" },
     opts = {
         keymap = {
             preset = "none",
@@ -19,14 +21,8 @@ return {
                 show_on_backspace = true,
                 show_on_blocked_trigger_characters = {},
             },
-            documentation = {
-                window = {
-                    border = "single",
-                },
-            },
             ghost_text = { enabled = true, show_without_selection = true },
             menu = {
-                border = "single",
                 draw = {
                     columns = {
                         { "kind_icon", "kind", gap = 1 },

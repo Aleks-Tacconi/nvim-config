@@ -3,7 +3,6 @@ vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 vim.g.loaded_netrw = 1
 vim.g.loaded_netrwPlugin = 1
-vim.g.loaded_python3_provider = nil
 
 if vim.env.NVIM_PYTHON_PROVIDER then
 	vim.g.python3_host_prog = vim.env.NVIM_PYTHON_PROVIDER

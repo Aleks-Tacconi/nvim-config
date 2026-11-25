@@ -14,12 +14,10 @@ map("n", "z=", function()
 	require("snacks").picker.spelling()
 end, "Spell suggestions")
 
----Open Oil unless its current buffer already represents the working directory.
+---Open Oil or step up to the parent directory until reaching the working directory.
 local function oil()
-	local cwd = vim.fn.getcwd()
-	cwd = cwd .. "/"
-	local path = vim.api.nvim_buf_get_name(0)
-	path = path:gsub("^oil:///", "/")
+	local cwd = vim.fn.getcwd():gsub("/+$", "") .. "/"
+	local path = vim.api.nvim_buf_get_name(0):gsub("^oil:///", "/")
 	if path ~= cwd then
 		vim.cmd("Oil")
 	end
@@ -27,39 +25,34 @@ end
 
 map("n", "<leader>d", oil, "Open Oil")
 
-local diagnostics_enabled = true
 map("n", "<leader>tl", function()
-	diagnostics_enabled = not diagnostics_enabled
-	if diagnostics_enabled then
-		vim.diagnostic.enable()
-	else
-		vim.diagnostic.enable(false)
-	end
+	vim.diagnostic.enable(not vim.diagnostic.is_enabled())
 end, "Toggle diagnostics")
 
 map("n", "<leader>p", function()
 	vim.diagnostic.open_float({
-		border = "rounded",
 		source = "if_many",
 	})
 end, "Line diagnostics")
 
 map("i", "<C-H>", "<C-W>", "Delete previous word")
 map("i", "<C-BS>", "<C-W>", "Delete previous word")
-map("c", "<C-H>", "<C-W>", "Delete previous word")
-map("c", "<C-BS>", "<C-W>", "Delete previous word")
+map("c", "<C-H>", "<C-W>", "Delete previous word", { silent = false })
+map("c", "<C-BS>", "<C-W>", "Delete previous word", { silent = false })
 
 map("v", "<", "<gv", "Indent left and keep selection")
 map("v", ">", ">gv", "Indent right and keep selection")
 
-map("v", "<A-j>", ":m .+1<CR>==", "Move selection down")
-map("v", "<A-k>", ":m .-2<CR>==", "Move selection up")
-map("x", "J", ":move '>+1<CR>gv-gv", "Move block down")
-map("x", "K", ":move '<-2<CR>gv-gv", "Move block up")
-map("x", "<A-j>", ":move '>+1<CR>gv-gv", "Move block down")
-map("x", "<A-k>", ":move '<-2<CR>gv-gv", "Move block up")
+map("x", "J", ":move '>+1<CR>gv=gv", "Move block down")
+map("x", "K", ":move '<-2<CR>gv=gv", "Move block up")
+map("x", "<A-j>", ":move '>+1<CR>gv=gv", "Move block down")
+map("x", "<A-k>", ":move '<-2<CR>gv=gv", "Move block up")
 
 map("v", "p", '"_dP', "Paste without yanking")
 
 map("n", "<C-l>", ":cnext<CR>", "Next quickfix item")
 map("n", "<C-h>", ":cprev<CR>", "Previous quickfix item")
+map("n", "<leader>u", function()
+	vim.cmd.packadd("nvim.undotree")
+	vim.cmd.Undotree()
+end, "Toggle undo tree")

@@ -8,7 +8,6 @@ vim.o.showmode = false
 vim.o.ruler = false
 vim.o.breakindent = true
 vim.o.undofile = true
-vim.fn.mkdir(vim.o.undodir, "p")
 vim.o.swapfile = false
 vim.o.writebackup = false
 vim.o.ignorecase = true

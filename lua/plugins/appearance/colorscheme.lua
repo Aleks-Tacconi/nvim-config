@@ -7,7 +7,6 @@ return {
 			styles = { transparency = true },
 			highlight_groups = {
 				FloatBorder = { fg = "muted", bg = "none" },
-				WhichKeyBorder = { fg = "muted", bg = "none" },
 				BlinkCmpDoc = { bg = "none" },
 				BlinkCmpDocBorder = { fg = "muted", bg = "none" },
 				BlinkCmpDocCursorLine = { bg = "highlight_low" },

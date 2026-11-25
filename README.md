@@ -25,7 +25,7 @@ Optional but useful:
 
 - `lazygit`
 - language-specific LSPs and formatters (See my [NixOS config](https://github.com/Aleks-Tacconi/NixOSConfig) for more details)
-- Jupytext, Jupyter, a Python provider, and ImageMagick on PATH for notebooks and images
+- Jupyter, a Python provider, and ImageMagick on PATH for notebooks and images
 - for QML projects, expose your Qt/QML modules through `QML_IMPORT_PATH` or `QML2_IMPORT_PATH` so `qmlls` can resolve imports
 
 ## Setup
@@ -66,7 +66,7 @@ Optional but useful:
 - Core autocmds: `lua/config/autocmds.lua`
 - Rose Pine theme setup: `lua/plugins/appearance/colorscheme.lua`
 - Search pickers: `lua/plugins/qol/snacks.lua`
-- LSP keymaps: `lua/lsp/config/keymaps.lua`
+- LSP setup and keymaps: `lua/lsp/plugins/nvim-lspconfig.lua`
 - Main plugin loading: `init.lua`
 
 ## Editing defaults
@@ -84,10 +84,9 @@ Optional but useful:
 ## Git review
 
 - `:DeltaView` or `<leader>v` opens a unified diff of the current file against HEAD (or the last selected ref).
-- `:DeltaMenu` or `<leader>dm` selects a changed file through Snacks; `:DeltaMenu!` opens the quickfix review workflow.
-- `:Delta .` reviews changes across the current directory; `<leader>da` opens the current path's diff.
+- `:DeltaMenu` selects a changed file through Snacks; `:DeltaMenu!` opens the quickfix review workflow.
+- `:Delta .` reviews changes across the current directory.
 - In a diff, `Tab`/`Shift-Tab` move between hunks and `q`/`Esc` return to the source file.
-- Oil shows `+N -N` for tracked changes, `??` for untracked files, and `~` for changes without line counts.
 
 ## Notebooks
 
@@ -112,6 +111,6 @@ The statusline shows the attached kernel. Select a kernel with the same environm
 as the project's Python tooling to keep execution and completion consistent.
 
 `:NotebookClearOutputs` clears saved results and stops the attached kernel, so old
-results cannot be saved back accidentally. `:NotebookToPdf` exports without executing
-the notebook. Notebook tools must be on PATH; `NVIM_PYTHON_PROVIDER` can point to a
-Python environment containing `pynvim`, Jupytext, Jupyter, and `nbformat`.
+results cannot be saved back accidentally. Notebook tools must be on PATH;
+`NVIM_PYTHON_PROVIDER` can point to a Python environment containing `pynvim`
+and Jupyter.

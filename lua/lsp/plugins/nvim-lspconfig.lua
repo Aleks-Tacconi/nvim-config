@@ -1,98 +1,115 @@
----Load language tooling once for explicitly supported filetypes.
-local languages = {
-	c = { "c" },
-	cpp = { "c" },
-	css = { "css" },
-	scss = { "css" },
-	less = { "css" },
-	dockerfile = { "docker" },
-	["yaml.docker-compose"] = { "docker" },
-	go = { "go" },
-	gomod = { "go" },
-	gowork = { "go" },
-	gotmpl = { "go" },
-	html = { "html" },
-	htmldjango = { "html" },
-	javascript = { "javascript" },
-	javascriptreact = { "javascript" },
-	typescript = { "javascript" },
-	typescriptreact = { "javascript" },
-	json = { "json" },
-	jsonc = { "json" },
-	kotlin = { "kotlin" },
-	lua = { "lua" },
-	markdown = { "markdown", "python" },
-	quarto = { "markdown", "python" },
-	nix = { "nix" },
-	prolog = { "prolog" },
-	python = { "python" },
-	qml = { "qml" },
-	qmljs = { "qml" },
-	rust = { "rust" },
-	sql = { "sql" },
-	xml = { "xml" },
-}
-
-local loaded = {}
-
----Register a language module and allow failed imports to be retried.
-local function load_file(name, keymaps)
-	if loaded[name] then
-		return
-	end
-	local module = "lsp.config.languages." .. name
-	local ok, lang_config = pcall(require, module)
-	if not ok then
-		package.loaded[module] = nil
-		vim.notify("lspconfig: error loading " .. name .. "\n" .. lang_config, vim.log.levels.ERROR)
-		return
-	end
-
-	for server, config in pairs(lang_config.servers) do
-		config.capabilities = require("blink.cmp").get_lsp_capabilities(config.capabilities)
-		config.on_attach = keymaps.on_attach
-		vim.lsp.config(server, config)
-		vim.lsp.enable(server)
-	end
-	loaded[name] = true
-end
-
----Register the tooling needed by a buffer filetype.
-local function load_for_ft(ft, keymaps)
-	local paths = languages[ft]
-	if not paths then
-		return
-	end
-	for _, path in ipairs(paths) do
-		load_file(path, keymaps)
-	end
-end
-
+---Configure diagnostics, LSP keymaps, and native language servers.
 return {
 	"neovim/nvim-lspconfig",
-	dependencies = {
-		"saghen/blink.cmp",
-	},
-	event = { "BufReadPre", "BufNewFile", "VimEnter", "FileType" },
+	dependencies = { "saghen/blink.cmp" },
+	event = { "BufReadPre", "BufNewFile" },
 	config = function()
-		require("lsp.config.diagnostics")
-		local keymaps = require("lsp.config.keymaps")
+		local utils = require("utils.lsp")
+		local qmlls, qmlls_learning = utils.qml_servers()
 
-		-- Load config for the filetype that triggered this event.
-		local ft = vim.bo.filetype
-		if ft ~= "" then
-			load_for_ft(ft, keymaps)
-		end
+		vim.diagnostic.config({
+			severity_sort = true,
+			float = { source = "if_many" },
+			underline = false,
+			signs = {
+				text = {
+					[vim.diagnostic.severity.ERROR] = "󰅚 ",
+					[vim.diagnostic.severity.WARN] = "󰀪 ",
+					[vim.diagnostic.severity.INFO] = "󰋽 ",
+					[vim.diagnostic.severity.HINT] = "󰌶 ",
+				},
+			},
+			virtual_text = {
+				source = true,
+				spacing = 2,
+			},
+		})
 
-		-- Also handle any future filetype changes (e.g. new buffers opened later).
-		vim.api.nvim_create_autocmd("FileType", {
-			group = vim.api.nvim_create_augroup("language-tooling", { clear = true }),
+		vim.lsp.config("*", {
+			capabilities = require("blink.cmp").get_lsp_capabilities(),
+		})
+
+		vim.api.nvim_create_autocmd("LspAttach", {
+			group = vim.api.nvim_create_augroup("lsp-keymaps", { clear = true }),
 			callback = function(ev)
-				local buf_ft = vim.bo[ev.buf].filetype
-				if buf_ft ~= "" then
-					load_for_ft(buf_ft, keymaps)
-				end
+				local bufnr = ev.buf
+				local picker = require("snacks").picker
+
+				vim.keymap.set("n", "gd", vim.lsp.buf.definition, { buf = bufnr, desc = "Go to definition" })
+				vim.keymap.set("n", "grr", picker.lsp_references, { buf = bufnr, desc = "Find references" })
+				vim.keymap.set("n", "K", vim.lsp.buf.hover, { buf = bufnr, desc = "Hover docs" })
+				vim.keymap.set("n", "gi", picker.lsp_implementations, { buf = bufnr, desc = "Go to implementation" })
+				vim.keymap.set("n", "<leader>rn", vim.lsp.buf.rename, { buf = bufnr, desc = "Rename symbol" })
+				vim.keymap.set("n", "<leader>ca", vim.lsp.buf.code_action, { buf = bufnr, desc = "Code action" })
 			end,
 		})
+
+		local servers = {
+			clangd = {},
+			cssls = {},
+			docker_compose_language_service = {},
+			dockerls = {},
+			gopls = {},
+			html = {
+				filetypes = { "html", "htmldjango" },
+			},
+			jsonls = {},
+			kotlin_lsp = {},
+			lemminx = {},
+			lua_ls = {
+				settings = {
+					Lua = {
+						workspace = { checkThirdParty = false },
+						telemetry = { enable = false },
+					},
+				},
+			},
+			marksman = {},
+			nil_ls = {},
+			postgres_lsp = {},
+			ty = {
+				cmd = function(dispatchers, config)
+					return vim.lsp.rpc.start({ utils.get_path("ty", config.root_dir), "server" }, dispatchers, {
+						cwd = config.cmd_cwd,
+						env = config.cmd_env,
+						detached = config.detached,
+					})
+				end,
+			},
+			qmlls = qmlls,
+			qmlls_learning = qmlls_learning,
+			ruff = {
+				on_init = function(client)
+					client.server_capabilities.hoverProvider = false
+				end,
+				cmd = function(dispatchers, config)
+					return vim.lsp.rpc.start({ utils.get_path("ruff", config.root_dir), "server" }, dispatchers, {
+						cwd = config.cmd_cwd,
+						env = config.cmd_env,
+						detached = config.detached,
+					})
+				end,
+			},
+			rust_analyzer = {
+				settings = {
+					["rust-analyzer"] = {
+						cargo = {
+							allFeatures = true,
+							loadOutDirsFromCheck = true,
+							buildScripts = { enable = true },
+						},
+						check = { command = "clippy" },
+						procMacro = { enable = true },
+					},
+				},
+			},
+			tailwindcss = {},
+			tsgo = { cmd = utils.tsgo_cmd },
+		}
+
+		for server, config in pairs(servers) do
+			vim.lsp.config(server, config)
+		end
+		vim.lsp.enable(vim.tbl_keys(servers))
 	end,
 }
