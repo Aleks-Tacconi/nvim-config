@@ -26,4 +26,5 @@ require("lazy").setup({
 	{ import = "plugins.navigation" },
 	{ import = "plugins.appearance" },
 })
+require("config.statusline").setup()
 require("config.keymaps")
