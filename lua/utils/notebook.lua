@@ -5,6 +5,7 @@ local cell_query
 local active_cell_cache = {}
 local managed_jupyter_dir = vim.fn.stdpath("cache") .. "/notebook-jupyter"
 local host_py_info
+local reveal_timer
 
 if not (vim.env.JUPYTER_PATH or ""):find(managed_jupyter_dir, 1, true) then
 	vim.env.JUPYTER_PATH = vim.env.JUPYTER_PATH and (managed_jupyter_dir .. ":" .. vim.env.JUPYTER_PATH)
@@ -369,7 +370,6 @@ function M.status()
 	return "Kernel: " .. table.concat(kernels, ", ")
 end
 
----Discover available Jupyter kernels directly from standard kernelspec directories.
 ---Query and cache the Python host's `major.minor` version and `site-packages` paths.
 local function get_host_python_info()
 	if host_py_info then
@@ -428,6 +428,7 @@ local function sync_python_kernelspec(buf)
 	end
 end
 
+---Discover available Jupyter kernels directly from standard kernelspec directories.
 local function discover_kernels()
 	local dirs = {
 		vim.fn.expand("~/.local/share/jupyter/kernels"),
@@ -447,11 +448,11 @@ local function discover_kernels()
 		local prefix = vim.fn.fnamemodify(vim.env.NVIM_PYTHON_PROVIDER, ":h:h")
 		dirs[#dirs + 1] = prefix .. "/share/jupyter/kernels"
 	end
-
 	local path_py = vim.fn.exepath("python3")
 	if path_py ~= "" then
 		dirs[#dirs + 1] = vim.fn.fnamemodify(path_py, ":h:h") .. "/share/jupyter/kernels"
 	end
+
 	local seen, kernels = {}, {}
 	for _, dir in ipairs(dirs) do
 		local matches = vim.fn.glob(dir .. "/*/kernel.json", true, true)
@@ -482,8 +483,8 @@ function M.initialize(callback, opts)
 		return
 	end
 	local buf = vim.api.nvim_get_current_buf()
-	local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, 25, false), "\n")
 	sync_python_kernelspec(buf)
+	local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, 25, false), "\n")
 	local declared = header:match("kernelspec:.-name:%s*([%w_%-%.]+)") or vim.b[buf].notebook_kernel
 	local available = discover_kernels()
 
@@ -491,12 +492,12 @@ function M.initialize(callback, opts)
 		if not kernel_name or not vim.api.nvim_buf_is_valid(buf) then
 			return
 		end
-		vim.api.nvim_create_autocmd("User", {
 		if vim.fn.has("python3") == 0 then
 			vim.notify("Neovim Python 3 provider is unavailable", vim.log.levels.ERROR)
 			return
 		end
 		sync_python_kernelspec(buf)
+		vim.api.nvim_create_autocmd("User", {
 			group = vim.api.nvim_create_augroup("notebook_ready_" .. buf, { clear = true }),
 			pattern = "MoltenKernelReady",
 			once = true,
@@ -698,6 +699,129 @@ function M.show_help()
 	end
 end
 
+---Return `(done, ready, total_virt_lines)` for cell output attached at `fence_row0`.
+local function cell_output_state(buf, fence_row0)
+	local namespaces = vim.api.nvim_get_namespaces()
+	local molten_ns, img_ns = namespaces["molten-extmarks"], namespaces["image.nvim"]
+	local done, has_img_slot, img_ready, total = false, false, false, 0
+	if molten_ns then
+		local marks = vim.api.nvim_buf_get_extmarks(buf, molten_ns, { fence_row0, 0 }, { fence_row0, -1 }, { details = true })
+		for _, m in ipairs(marks) do
+			local vl = m[4] and m[4].virt_lines
+			if vl then
+				total = total + #vl
+				local header = vl[1] and vl[1][1] and vl[1][1][1] or ""
+				done = done or header:find("Done", 1, true) ~= nil or header:find("Failed", 1, true) ~= nil
+				for _, line in ipairs(vl) do
+					has_img_slot = has_img_slot or (line[1] and line[1][1] == " ")
+				end
+			end
+		end
+	end
+	if img_ns then
+		local marks = vim.api.nvim_buf_get_extmarks(buf, img_ns, { fence_row0, 0 }, { fence_row0, -1 }, { details = true })
+		for _, m in ipairs(marks) do
+			local vl = m[4] and m[4].virt_lines
+			if vl and #vl > 0 then
+				img_ready = true
+				total = total + #vl
+			end
+		end
+	end
+	return done, (not has_img_slot or img_ready), total
+end
+
+---Scroll the active window down so at least `needed_below` rows are visible under `fence_line`.
+local function scroll_below_line(fence_line, needed_below, cursor_line)
+	local win = vim.api.nvim_get_current_win()
+	local win_h = vim.api.nvim_win_get_height(win)
+	local target_max_row = math.max(3, win_h - math.min(needed_below, win_h - 3))
+	local win_off = vim.fn.getwininfo(win)[1].winrow - 1
+	if cursor_line and vim.api.nvim_win_get_cursor(win)[1] < cursor_line then
+		vim.api.nvim_win_set_cursor(win, { cursor_line, 0 })
+	end
+	local cur_row = vim.fn.screenpos(win, fence_line, 1).row - win_off
+	if cur_row > target_max_row then
+		vim.cmd("normal! " .. (cur_row - target_max_row) .. "\5")
+	end
+end
+
+---Watch `cell_first` until its output finishes rendering, then scroll it into view.
+local function reveal_cell_output(buf, cell_first)
+	if reveal_timer then
+		reveal_timer:stop()
+		reveal_timer:close()
+		reveal_timer = nil
+	end
+	local ticks = 0
+	reveal_timer = vim.uv.new_timer()
+	reveal_timer:start(60, 80, vim.schedule_wrap(function()
+		ticks = ticks + 1
+		if not reveal_timer then
+			return
+		end
+		if ticks > 300 or not vim.api.nvim_buf_is_valid(buf) or vim.api.nvim_get_current_buf() ~= buf then
+			reveal_timer:stop()
+			reveal_timer:close()
+			reveal_timer = nil
+			return
+		end
+		local all = cell_ranges(buf)
+		local cur_idx = current_cell(all, vim.api.nvim_win_get_cursor(0)[1] - 1)
+		local cell = cur_idx and all[cur_idx]
+		if not cell or cell.first ~= cell_first then
+			reveal_timer:stop()
+			reveal_timer:close()
+			reveal_timer = nil
+			return
+		end
+		local done, ready, total = cell_output_state(buf, cell.last - 1)
+		if done and ready and total > 0 then
+			reveal_timer:stop()
+			reveal_timer:close()
+			reveal_timer = nil
+			scroll_below_line(cell.last, total + 2, math.max(cell.first + 2, cell.last - 1))
+		end
+	end))
+end
+
+---Bind `q` and `<Esc>` on a Molten output buffer to close and clean up the inspector.
+local function bind_output_close(buf)
+	local close_output = function()
+		pcall(vim.cmd, "close")
+		pcall(vim.cmd, "MoltenHideOutput")
+	end
+	for _, key in ipairs({ "q", "<Esc>" }) do
+		vim.keymap.set("n", key, close_output, { buffer = buf, silent = true, nowait = true })
+	end
+end
+
+---Scroll the current cell to leave room below it, then open Molten's output inspector.
+function M.inspect_output()
+	if not M.attached() then
+		return
+	end
+	local prev_win = vim.api.nvim_get_current_win()
+	local all = cell_ranges(0)
+	local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+	local idx = current_cell(all, row)
+	if idx then
+		local cell = all[idx]
+		local code_top, code_bot = cell.first + 2, math.max(cell.first + 2, cell.last - 1)
+		local cur_line = row + 1
+		if cur_line < code_top or cur_line > code_bot then
+			vim.api.nvim_win_set_cursor(0, { code_bot, 0 })
+			pcall(vim.fn.MoltenOnCursorMoved)
+		end
+		local popup_room = (vim.g.molten_output_win_max_height or 20) + 2
+		scroll_below_line(cell.last, popup_room, code_bot)
+	end
+	vim.cmd("noautocmd MoltenEnterOutput")
+	if vim.api.nvim_get_current_win() ~= prev_win then
+		bind_output_close(vim.api.nvim_get_current_buf())
+	end
+end
+
 ---Evaluate one fenced code cell with Molten.
 local function evaluate_cell(cell)
 	if cell and cell.last - 1 > cell.first + 1 then
@@ -709,26 +833,34 @@ end
 local function run(scope, advance)
 	return function()
 		M.initialize(function()
-			local all = cell_ranges(0)
+			local buf = vim.api.nvim_get_current_buf()
+			local all = cell_ranges(buf)
 			local row = vim.api.nvim_win_get_cursor(0)[1] - 1
+			local target
 			if scope == "cell" then
 				local idx = current_cell(all, row)
 				if idx then
-					evaluate_cell(all[idx])
+					target = all[idx]
+					evaluate_cell(target)
 				end
 			elseif scope == "above" then
 				for _, cell in ipairs(all) do
 					if cell.first <= row then
+						target = cell
 						evaluate_cell(cell)
 					end
 				end
 			elseif scope == "all" then
 				for _, cell in ipairs(all) do
+					target = cell
 					evaluate_cell(cell)
 				end
 			end
 			if advance then
 				M.move(1)
+			elseif target then
+				scroll_below_line(target.last, 5, math.max(target.first + 2, target.last - 1))
+				reveal_cell_output(buf, target.first)
 			end
 		end)
 	end
@@ -755,6 +887,7 @@ local function attach(event)
 	vim.opt_local.colorcolumn = ""
 	vim.opt_local.conceallevel = 2
 	vim.opt_local.concealcursor = "nc"
+	vim.opt_local.scrolloff = 2
 
 	local maps = {
 		{ "n", "<Tab>", function() M.move(1) end, "Next code cell" },
@@ -770,7 +903,7 @@ local function attach(event)
 		{ "n", "<localleader>mk", "<cmd>MoltenInfo<CR>", "Kernel information" },
 		{ "n", "<localleader>mx", "<cmd>MoltenInterrupt<CR>", "Interrupt execution" },
 		{ "n", "<localleader>mr", "<cmd>MoltenRestart<CR>", "Restart kernel" },
-		{ "n", "<localleader>os", "<cmd>noautocmd MoltenEnterOutput<CR>", "Inspect full output" },
+		{ "n", "<localleader>os", M.inspect_output, "Inspect full output" },
 		{ "n", "<localleader>oh", "<cmd>MoltenHideOutput<CR>", "Close output inspector" },
 		{ "n", "<localleader>ol", M.load_outputs, "Load saved outputs" },
 		{ "n", "<localleader>ox", M.save_outputs, "Save notebook and outputs" },
@@ -832,9 +965,7 @@ function M.setup()
 		group = group,
 		pattern = "molten_output",
 		callback = function(event)
-			for _, key in ipairs({ "q", "<Esc>" }) do
-				vim.keymap.set("n", key, "<cmd>close<CR>", { buffer = event.buf, silent = true })
-			end
+			bind_output_close(event.buf)
 		end,
 	})
 	vim.api.nvim_create_user_command("NewNotebook", function(opts)
