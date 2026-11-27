@@ -31,8 +31,11 @@ end
 
 ---Enable highlighting and optional Treesitter indentation for one buffer.
 local function attach(buf, lang)
-	if lang == "markdown" then
+	if lang == "markdown" and not markdown_query_patched then
 		patch_markdown_query()
+		if markdown_query_patched and vim.treesitter.highlighter.active[buf] then
+			vim.treesitter.stop(buf)
+		end
 	end
 	vim.treesitter.start(buf, lang)
 	if vim.bo[buf].filetype ~= "typescript" and vim.bo[buf].filetype ~= "typescriptreact" then
@@ -84,6 +87,9 @@ function M.setup()
 
 	for _, lang in ipairs(ts.get_installed("parsers")) do
 		installed_parsers[lang] = true
+	end
+	if installed_parsers.markdown then
+		patch_markdown_query()
 	end
 	local missing = vim.tbl_filter(function(lang)
 		return not installed_parsers[lang]
