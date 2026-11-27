@@ -3,6 +3,28 @@ local M = {}
 local margin_ns = vim.api.nvim_create_namespace("notebook_active_cell_margin")
 local cell_query
 local active_cell_cache = {}
+local managed_jupyter_dir = vim.fn.stdpath("cache") .. "/notebook-jupyter"
+local host_py_info
+
+if not (vim.env.JUPYTER_PATH or ""):find(managed_jupyter_dir, 1, true) then
+	vim.env.JUPYTER_PATH = vim.env.JUPYTER_PATH and (managed_jupyter_dir .. ":" .. vim.env.JUPYTER_PATH)
+		or managed_jupyter_dir
+end
+
+local KERNEL_BOOTSTRAP = [=[
+import importlib.util, site, sys
+if importlib.util.find_spec("ipykernel") is None:
+    ver, fallback = sys.argv[1], sys.argv[2]
+    cur = f"{sys.version_info[0]}.{sys.version_info[1]}"
+    if cur != ver or not fallback:
+        raise RuntimeError(f"Python {cur} ({sys.executable}) has no 'ipykernel' package installed")
+    for d in fallback.split(":"):
+        if d:
+            site.addsitedir(d)
+sys.argv = [sys.argv[0], *sys.argv[3:]]
+from ipykernel.kernelapp import launch_new_instance
+launch_new_instance()
+]=]
 
 local DEFAULT_NOTEBOOK_JSON = vim.json.encode({
 	cells = {
@@ -348,6 +370,64 @@ function M.status()
 end
 
 ---Discover available Jupyter kernels directly from standard kernelspec directories.
+---Query and cache the Python host's `major.minor` version and `site-packages` paths.
+local function get_host_python_info()
+	if host_py_info then
+		return host_py_info
+	end
+	local prog = vim.fn.expand(vim.g.python3_host_prog or "")
+	if prog == "" or vim.fn.executable(prog) == 0 then
+		prog = vim.fn.exepath("python3")
+	end
+	if prog == "" then
+		return { prog = "", version = "", site = "" }
+	end
+	local script = "import sys; print(f'{sys.version_info[0]}.{sys.version_info[1]}'); print(':'.join(p for p in sys.path if 'site-packages' in p))"
+	local res = vim.system({ prog, "-c", script }, { text = true }):wait()
+	local lines = (res.code == 0 and res.stdout) and vim.split(vim.trim(res.stdout), "\n", { plain = true }) or {}
+	host_py_info = { prog = prog, version = lines[1] or "", site = lines[2] or "" }
+	return host_py_info
+end
+
+---Resolve the preferred Python interpreter for `buf` (virtualenv, PATH, or Neovim host).
+local function resolve_target_python(buf)
+	if vim.env.VIRTUAL_ENV and vim.fn.executable(vim.env.VIRTUAL_ENV .. "/bin/python") == 1 then
+		return vim.env.VIRTUAL_ENV .. "/bin/python"
+	end
+	local buf_name = vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_name(buf) or ""
+	local start_dir = buf_name ~= "" and vim.fn.fnamemodify(buf_name, ":p:h") or vim.fn.getcwd()
+	local venv = vim.fs.find(".venv", { path = start_dir, upward = true, type = "directory" })[1]
+	if venv and vim.fn.executable(venv .. "/bin/python") == 1 then
+		return venv .. "/bin/python"
+	end
+	local path_py = vim.fn.exepath("python3")
+	if path_py ~= "" then
+		return path_py
+	end
+	return get_host_python_info().prog
+end
+
+---Write a managed `python3` kernelspec targeting the active project or fallback Python.
+local function sync_python_kernelspec(buf)
+	local target = resolve_target_python(buf)
+	if target == "" then
+		return
+	end
+	local host = get_host_python_info()
+	local kernel_dir = managed_jupyter_dir .. "/kernels/python3"
+	vim.fn.mkdir(kernel_dir, "p")
+	local spec = {
+		argv = { target, "-c", KERNEL_BOOTSTRAP, host.version, host.site, "-f", "{connection_file}" },
+		display_name = "Python 3",
+		language = "python",
+	}
+	local file = io.open(kernel_dir .. "/kernel.json", "w")
+	if file then
+		file:write(vim.json.encode(spec) .. "\n")
+		file:close()
+	end
+end
+
 local function discover_kernels()
 	local dirs = {
 		vim.fn.expand("~/.local/share/jupyter/kernels"),
@@ -368,6 +448,10 @@ local function discover_kernels()
 		dirs[#dirs + 1] = prefix .. "/share/jupyter/kernels"
 	end
 
+	local path_py = vim.fn.exepath("python3")
+	if path_py ~= "" then
+		dirs[#dirs + 1] = vim.fn.fnamemodify(path_py, ":h:h") .. "/share/jupyter/kernels"
+	end
 	local seen, kernels = {}, {}
 	for _, dir in ipairs(dirs) do
 		local matches = vim.fn.glob(dir .. "/*/kernel.json", true, true)
@@ -399,6 +483,7 @@ function M.initialize(callback, opts)
 	end
 	local buf = vim.api.nvim_get_current_buf()
 	local header = table.concat(vim.api.nvim_buf_get_lines(buf, 0, 25, false), "\n")
+	sync_python_kernelspec(buf)
 	local declared = header:match("kernelspec:.-name:%s*([%w_%-%.]+)") or vim.b[buf].notebook_kernel
 	local available = discover_kernels()
 
@@ -407,6 +492,11 @@ function M.initialize(callback, opts)
 			return
 		end
 		vim.api.nvim_create_autocmd("User", {
+		if vim.fn.has("python3") == 0 then
+			vim.notify("Neovim Python 3 provider is unavailable", vim.log.levels.ERROR)
+			return
+		end
+		sync_python_kernelspec(buf)
 			group = vim.api.nvim_create_augroup("notebook_ready_" .. buf, { clear = true }),
 			pattern = "MoltenKernelReady",
 			once = true,
